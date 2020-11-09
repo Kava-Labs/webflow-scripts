@@ -12,6 +12,89 @@ const HARD_DENOM = "hard";
 const USDX_DENOM = "usdx";
 const BNB_DENOM = "bnb";
 
+function formatNumbers(input, fixed = 2){
+  return (Number(input).toFixed(fixed).toString()).replace(
+    /^([-+]?)(0?)(\d+)(.?)(\d+)$/g, function(match, sign, zeros, before, decimal, after) {
+      var reverseString = function(string) { return string.split('').reverse().join(''); };
+      var insertCommas  = function(string) {
+        var reversed           = reverseString(string);
+        var reversedWithCommas = reversed.match(/.{1,3}/g).join(',');
+        return reverseString(reversedWithCommas);
+      };
+      return sign + (decimal ? insertCommas(before) + decimal + after : insertCommas(before + after));
+    }
+  );
+};
+
+var getBalanceForDenom = (denom, balances) => {
+  const balance =  balances.find(b => b.denom === denom);
+  return balance ? Number(balance.amount) : 0.00
+};
+
+function rewardPeriodsPerYear(rewardsPerSecond) {
+  const secondsPerYear = Number(31556952);
+  return (secondsPerYear * Number(rewardsPerSecond)) / 10 ** 6
+}
+
+var formatPercentage = (value) => {
+  return value +"%"
+};
+
+var convertToCoin = (balance) => {
+  const coinDenom = balance.denom;
+  const coinAmount = Number(balance.amount);
+  let amount;
+  switch(coinDenom) {
+    case 'bnb':
+      amount = coinAmount / (10 ** 8);
+      break;
+    default:
+      amount = coinAmount / (10 ** 6);
+  }
+  return amount;
+};
+
+var getModuleBalances = async () => {
+  const accountsUrl = BASE_URL + "/harvest/accounts";
+  const accountsResponse = await fetch(accountsUrl);
+  const accountsData = await accountsResponse.json();
+  return accountsData.result.find(a => a.value.name === 'harvest').value.coins;
+};
+
+var getRewardPerYearByDenom = async () => {
+  const harvestParamsUrl = "https://kava4.data.kava.io/harvest/parameters";
+  const harvestParamsResponse = await fetch(harvestParamsUrl);
+  const harvestData = await harvestParamsResponse.json();
+
+  const arr = harvestData.result.liquidity_provider_schedules.map((lp) => {
+    const reward = lp.rewards_per_second.amount;
+
+    // HARD per year by denom
+    const rewardPerYear = rewardPeriodsPerYear(reward)
+    return { denom: lp.deposit_denom, amount: rewardPerYear }
+  })
+  return arr
+}
+
+var setApyByDenom = (balances, prices, hardValuesPerSecondByDenom) => {
+  return hardValuesPerSecondByDenom.map((d) => {
+    const price = prices.find(p => p.name === d.denom);
+
+    const balance = balances.find(b => b.denom === d.denom);
+    const balanceAmount = convertToCoin(balance);
+
+    const hardPerYear = hardValuesPerSecondByDenom.find(h => h.denom === d.denom);
+    const hardPrice = prices.find(p => p.name === 'hard').price;
+
+    const numerator = hardPerYear.amount * hardPrice;
+    const denomentator = balanceAmount * price.price;
+    const a = formatNumbers((numerator / denomentator) * 100);
+    const apy = formatPercentage(formatNumbers((numerator / denomentator) * 100));
+
+    return { denom: d.denom, apy };
+  })
+};
+
 var getKavaPrice = async () => {
   const priceURL = "https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT";
   const priceResponse = await fetch(priceURL);
@@ -95,31 +178,46 @@ var getTotalValues = async (prices) => {
   return totalValues
 }
 
+var setTotalValue = (denom, cssId, totalValues) => {
+  const denomValue = totalValues.find((item) => item.denom === denom).total_value;
+  if (denomValue) {
+    document.getElementById(cssId).innerHTML = usdFormatter.format(denomValue);
+  }
+  return denomValue
+};
+
+var setApyValue = (denom, cssId, apyByDenom) => {
+  const denomApy = apyByDenom.find(a => a.denom === denom);
+  document.getElementById(cssId).innerHTML = denomApy.apy;
+};
+
 var updateDisplayValues = async() => {
-  const hardTokenPrice = 0.85;
+  const prices = await getPrices();
+  const hardTokenPrice = prices.find(p => p.name === 'hard').price;
   const rawTotalHardDist = await getTotalHardAvailable();
   const displayTotalHardDist = usdFormatter.format(rawTotalHardDist*hardTokenPrice);
   const totalHardDistUSDValue = displayTotalHardDist.slice(0, displayTotalHardDist.length);
   document.getElementById("total-hard-dist").innerHTML = totalHardDistUSDValue;
 
-  const prices = await getPrices();
   const totalValues = await getTotalValues(prices);
-  const bnbValue = totalValues.find((item) => item.denom === BNB_DENOM).total_value;
-  document.getElementById("TL-BNB").innerHTML = usdFormatter.format(bnbValue);
+  const bnbValue = setTotalValue(BNB_DENOM, 'TL-BNB', totalValues);
+  const kavaValue = setTotalValue(KAVA_DENOM, 'TL-KAVA', totalValues);
+  const usdxValue = setTotalValue(USDX_DENOM, 'TL-USDX', totalValues);
+  const hardValue = setTotalValue(HARD_DENOM, 'TL-HARD', totalValues);
 
-  const kavaValue = totalValues.find((item) => item.denom === KAVA_DENOM).total_value;
-  document.getElementById("TL-KAVA").innerHTML = usdFormatter.format(kavaValue);
-
-  const usdxValue = totalValues.find((item) => item.denom === USDX_DENOM).total_value;
-  document.getElementById("TL-USDX").innerHTML = usdFormatter.format(usdxValue);
-
-  const hardValue = totalValues.find((item) => item.denom === HARD_DENOM);
-  if(hardValue) {
-    document.getElementById("TL-HARD").innerHTML = usdFormatter.format(hardValue.total_value);
-  }
-
-  const totalValue = bnbValue + kavaValue + usdxValue;
+  const totalValue = bnbValue + kavaValue + usdxValue + hardValue;
   document.getElementById("TAV").innerHTML = usdFormatter.format(totalValue);
+
+  const balances = await getModuleBalances()
+  const bnbTotalBalance = getBalanceForDenom('bnb', balances);
+
+  const hardValuesPerSecondByDenom = await getRewardPerYearByDenom();
+
+  const apyByDenom = setApyByDenom(balances, prices, hardValuesPerSecondByDenom);
+  setApyValue('bnb', 'APY-BNB', apyByDenom);
+  setApyValue('hard', 'APY-HARD', apyByDenom);
+  setApyValue('ukava', 'APY-KAVA', apyByDenom);
+  setApyValue('usdx', 'APY-USDX', apyByDenom);
 }
 
 var getTotalHardClaimed = async () => {
