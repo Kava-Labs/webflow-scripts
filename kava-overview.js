@@ -201,6 +201,21 @@ var setDenomInfo = async (priceDenom, platformDenom, denomLockedId, usdxAmount, 
   return { denomTotalSupplyValue };
 };
 
+var setUsdxAmountsByDenom = (denom, usdxAmount, usdxLimit) => {
+  const usdxAmountDisplay = usdFormatter.format(usdxAmount)
+  const usdxAmountDisplaySliced = usdxAmountDisplay.slice(1, usdxAmountDisplay.length-3);
+
+  const usdxLimitDisplay = usdFormatter.format(usdxLimit)
+  const usdxLimitDisplaySliced = usdxLimitDisplay.slice(1, usdxLimitDisplay.length-3);
+
+  const rawUsdxUtilization = Number(usdxAmount.toFixed(0)) / Number(usdxLimit.toFixed(0))
+  const percentUsdxUtilization = Number(rawUsdxUtilization.toFixed(3) * 100).toFixed(2) + "%";
+
+  $(`.percent-line-usdx-${denom}`).css("width", percentUsdxUtilization);
+  document.getElementById(`USDX_${denom.toUpperCase()}_PERCENT`).innerHTML = percentUsdxUtilization;
+  document.getElementById(`USDX_${denom.toUpperCase()}_LOCK_OVER_LIMIT`).innerHTML = usdxAmountDisplaySliced + " / " + usdxLimitDisplaySliced;
+};
+
 var setUsdxAmount = (usdxLimit, kavaPlatformAmounts, usdxBorrowed, feesOwed) => {
   if(usdxLimit && kavaPlatformAmounts) {
     const usdxBorrowedAndFees = usdxBorrowed + feesOwed;
@@ -293,16 +308,11 @@ var updateDisplayValues = async () => {
   const usdxAmountDisplay = usdFormatter.format(totalUsdxAmount)
   const usdxAmountDisplaySliced = usdxAmountDisplay.slice(1, usdxAmountDisplay.length-3);
 
+  setUsdxAmountsByDenom('bnb', bnbUsdxAmount, bnbUsdxLimit)
+  setUsdxAmountsByDenom('btc', btcUsdxAmount, btcUsdxLimit)
+  setUsdxAmountsByDenom('busd', busdUsdxAmount, busdUsdxLimit)
+  setUsdxAmountsByDenom('xrp', xrpUsdxAmount, xrpUsdxLimit)
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
-
-  const usdxLimitDisplay = usdFormatter.format(totalUsdxLimit)
-  const usdxLimitDisplaySliced = usdxLimitDisplay.slice(1, usdxLimitDisplay.length-3);
-
-  const rawUsdxUtilization = Number(totalUsdxAmount.toFixed(0)) / Number(totalUsdxLimit.toFixed(0))
-  const percentUsdxUtilization = Number(rawUsdxUtilization.toFixed(3) * 100).toFixed(2) + "%";
-  $(".percent-line-usdx").css("width", percentUsdxUtilization);
-  document.getElementById("USDX_PERCENT").innerHTML = percentUsdxUtilization;
-  document.getElementById("USDX_LOCK_OVER_LIMIT").innerHTML = usdxAmountDisplaySliced + " / " + usdxLimitDisplaySliced;
 
   const valueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice);
   const valueDistributedDisplay = usdFormatter.format(valueDistributed)
