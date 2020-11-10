@@ -274,7 +274,7 @@ var updateDisplayValues = async () => {
   }
   let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A')
   let busdUsdxAmount = setUsdxAmount(busdUsdxLimit, busdPlatformAmounts, busdBorrowed, busdFees)
-  let busdInfo = await setDenomInfo('busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, null, 'busdAPY');
+  let busdInfo = await setDenomInfo('busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'busdAPY');
   let busdTotalSupplyValue = busdInfo.denomTotalSupplyValue;
 
   let xrpPlatformAmounts = await totalLockedAndBorrowedByDenom('xrpb-a');
