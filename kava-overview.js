@@ -314,8 +314,10 @@ var updateDisplayValues = async () => {
   setUsdxAmountsByDenom('xrp', xrpUsdxAmount, xrpUsdxLimit)
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
 
-  const valueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice);
-  const valueDistributedDisplay = usdFormatter.format(valueDistributed)
+  const bnbValueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice);
+  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice);
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed;
+  const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("REWARDS_DISTRIBUTED").innerHTML = valueDistributedDisplaySliced + " USD";
 };
