@@ -32,7 +32,7 @@ var getBalanceForDenom = (denom, balances) => {
 };
 
 function rewardPeriodsPerYear(rewardsPerSecond) {
-  const secondsPerYear = Number(31556952);
+  const secondsPerYear = Number(31536000);
   return (secondsPerYear * Number(rewardsPerSecond)) / 10 ** 6
 }
 
