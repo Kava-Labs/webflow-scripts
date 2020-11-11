@@ -118,16 +118,17 @@ var getValueRewardsDistributedForDenom = async (denom, kavaPrice) => {
   const rewardPeriodsRepsonse = await fetch(rewardPeriodsURL);
   const rewardPeriodsData = await rewardPeriodsRepsonse.json();
 
-  const rewardsStartTime = new Date("2020-07-29T14:00:14.333506701Z");
-  const millisecondsRewardActive = Date.now() - rewardsStartTime.getTime();
-  const secondsRewardActive = millisecondsRewardActive / 1000;
-
   let kavaDistributed = 0;
 
   if(rewardPeriodsData.result) {
     const denomRewardPeriod = rewardPeriodsData.result.find(
       (item) => item.collateral_type.toUpperCase() === denom.toUpperCase()
     );
+
+    const rewardsStartTime = new Date(denomRewardPeriod.start);
+    const millisecondsRewardActive = Date.now() - rewardsStartTime.getTime();
+    const secondsRewardActive = millisecondsRewardActive / 1000;
+
     const ukavaRewardsPerSecond = denomRewardPeriod.reward.amount;
     const ukavaDistributed = Number(ukavaRewardsPerSecond) * Number(secondsRewardActive);
     kavaDistributed = ukavaDistributed / FACTOR_SIX;
