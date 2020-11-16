@@ -113,7 +113,8 @@ function rewardPeriodsPerYear(ns) {
   return NanoSecondsPerYear / Number(ns)
 }
 
-var getValueRewardsDistributedForDenom = async (denom, kavaPrice) => {
+var getValueRewardsDistributedForDenom = async (denom, kavaPrice, rewardsStartTime) => {
+  if(!rewardsStartTime) { return 0.00 }
   const rewardPeriodsURL = BASE_URL + "/incentive/rewardperiods";
   const rewardPeriodsRepsonse = await fetch(rewardPeriodsURL);
   const rewardPeriodsData = await rewardPeriodsRepsonse.json();
@@ -125,7 +126,6 @@ var getValueRewardsDistributedForDenom = async (denom, kavaPrice) => {
       (item) => item.collateral_type.toUpperCase() === denom.toUpperCase()
     );
 
-    const rewardsStartTime = new Date(denomRewardPeriod.start);
     const millisecondsRewardActive = Date.now() - rewardsStartTime.getTime();
     const secondsRewardActive = millisecondsRewardActive / 1000;
 
@@ -262,7 +262,7 @@ var updateDisplayValues = async () => {
   }
   let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A')
   let btcUsdxAmount = setUsdxAmount(btcUsdxLimit, btcPlatformAmounts, btcBorrowed, btcFees)
-  let btcInfo = await setDenomInfo('btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, null, 'btcAPY');
+  let btcInfo = await setDenomInfo('btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'btcAPY');
   let btcTotalSupplyValue = btcInfo.denomTotalSupplyValue;
   let busdPlatformAmounts = await totalLockedAndBorrowedByDenom('busd-a');
   let busdLocked;
@@ -315,9 +315,10 @@ var updateDisplayValues = async () => {
   setUsdxAmountsByDenom('xrp', xrpUsdxAmount, xrpUsdxLimit)
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
 
-  const bnbValueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice);
-  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice);
-  const totalValueDistributed = bnbValueDistributed + busdValueDistributed;
+  const bnbValueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
+  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice, null);
+  const btcbValueDistributed = await getValueRewardsDistributedForDenom('btcb-a', kavaPrice, null);
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("REWARDS_DISTRIBUTED").innerHTML = valueDistributedDisplaySliced + " USD";
