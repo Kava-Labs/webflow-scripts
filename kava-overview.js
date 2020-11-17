@@ -316,8 +316,8 @@ var updateDisplayValues = async () => {
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
 
   const bnbValueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
-  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice, null);
-  const btcbValueDistributed = await getValueRewardsDistributedForDenom('btcb-a', kavaPrice, null);
+  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
+  const btcbValueDistributed = await getValueRewardsDistributedForDenom('btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
