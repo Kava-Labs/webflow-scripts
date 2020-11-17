@@ -26,8 +26,8 @@ var getValueRewardsDistributed = async (kavaPrice) => {
 
   const rewardStartTimes = [
     { denom: 'bnb-a', date: new Date("2020-07-29T14:00:14.333506701Z") },
-    // { denom: 'busd-a', date: new Date("2020-07-29T14:00:14.333506701Z") },
-    // { denom: 'btcb-a', date: new Date("2020-07-29T14:00:14.333506701Z") },
+    { denom: 'busd-a', date: new Date("2020-11-09T14:00:14.333506701Z") },
+    { denom: 'btcb-a', date: new Date("2020-11-16T14:00:14.333506701Z") },
   ]
 
   const secondsRewardActives = setSecondsRewardActive(rewardStartTimes);
