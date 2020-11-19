@@ -11,6 +11,9 @@ const KAVA_DENOM = "ukava";
 const HARD_DENOM = "hard";
 const USDX_DENOM = "usdx";
 const BNB_DENOM = "bnb";
+const BTC_DENOM = 'btcb';
+const XRP_DENOM = 'xrpb';
+const BUSD_DENOM = 'busd';
 
 function formatNumbers(input, fixed = 2){
   return (Number(input).toFixed(fixed).toString()).replace(
@@ -46,6 +49,15 @@ var convertToCoin = (balance) => {
   let amount;
   switch(coinDenom) {
     case 'bnb':
+      amount = coinAmount / (10 ** 8);
+      break;
+    case 'btcb':
+      amount = coinAmount / (10 ** 8);
+      break;
+    case 'xrpb':
+      amount = coinAmount / (10 ** 8);
+      break;
+    case 'busd':
       amount = coinAmount / (10 ** 8);
       break;
     default:
@@ -149,6 +161,18 @@ var getPrices = async () => {
   const bnbPrice = {name: BNB_DENOM, price: Number(bnbMarketData.lastPrice)};
   prices.push(bnbPrice);
 
+  const btcMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
+  const btcMarketData = await btcMarketResponse.json();
+  const btcPrice = {name: BTC_DENOM, price: Number(btcMarketData.lastPrice)};
+  prices.push(btcPrice);
+
+  const busdPrice = {name: BUSD_DENOM, price: 1};
+  prices.push(busdPrice)
+
+  const xrpMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=XRPUSDT");
+  const xrpMarketData = await xrpMarketResponse.json();
+  const xrpPrice = {name: XRP_DENOM, price: Number(xrpMarketData.lastPrice)};
+  prices.push(xrpPrice)
   return prices;
 }
 
@@ -158,10 +182,14 @@ var getTotalValues = async (prices) => {
   conversionMap.set(KAVA_DENOM, 10 ** 6);
   conversionMap.set(HARD_DENOM, 10 ** 6);
   conversionMap.set(BNB_DENOM, 10 ** 8);
+  conversionMap.set(BTC_DENOM, 10 ** 8);
+  conversionMap.set(XRP_DENOM, 10 ** 8);
+  conversionMap.set(BUSD_DENOM, 10 ** 8);
 
   const response = await fetch("https://kava4.data.kava.io/harvest/accounts");
   const data = await response.json();
   const results = data && data.result;
+
 
   var totalValues = [];
   if(results && results.length > 0) {
@@ -204,8 +232,12 @@ var updateDisplayValues = async() => {
   const kavaValue = setTotalValue(KAVA_DENOM, 'TL-KAVA', totalValues);
   const usdxValue = setTotalValue(USDX_DENOM, 'TL-USDX', totalValues);
   const hardValue = setTotalValue(HARD_DENOM, 'TL-HARD', totalValues);
+  const btcValue = setTotalValue(BTC_DENOM, 'TL-BTC', totalValues);
+  const busdValue = setTotalValue(BUSD_DENOM, 'TL-BUSD', totalValues);
+  const xrpValue = setTotalValue(XRP_DENOM, 'TL-XRP', totalValues);
 
-  const totalValue = bnbValue + kavaValue + usdxValue + hardValue;
+
+  const totalValue = bnbValue + kavaValue + usdxValue + hardValue + btcValue + busdValue + xrpValue;
   document.getElementById("TAV").innerHTML = usdFormatter.format(totalValue);
 
   const balances = await getModuleBalances()
@@ -218,6 +250,9 @@ var updateDisplayValues = async() => {
   setApyValue('hard', 'APY-HARD', apyByDenom);
   setApyValue('ukava', 'APY-KAVA', apyByDenom);
   setApyValue('usdx', 'APY-USDX', apyByDenom);
+  setApyValue('btcb', 'APY-BTC', apyByDenom);
+  setApyValue('xrpb', 'APY-XRP', apyByDenom);
+  setApyValue('busd', 'APY-BUSD', apyByDenom);
 }
 
 var getTotalHardClaimed = async () => {
