@@ -43,10 +43,14 @@ var getCollateralPrice = async (market) => {
   return price;
 }
 
-var usdxDebtLimitByDenom = async (denom) => {
+var getCdpParameters = async () => {
   const usdxLimitURL = BASE_URL + "/cdp/parameters";
   const paramsResponse = await fetch(usdxLimitURL);
   const paramsData = await paramsResponse.json();
+  return paramsData;
+}
+
+var usdxDebtLimitByDenom = (denom, paramsData) => {
   const collateralParams = paramsData.result.collateral_params;
 
   const denomParams = collateralParams.find(
@@ -65,10 +69,14 @@ var totalAmountOnPlatformByDenom = async (denom) => {
   return Number(supplyRes.current_supply.amount);
 };
 
-var supplyLimitByDenom = async (denom) => {
+var getBep3ParamsData = async () => {
   const bep3Params = BASE_URL + "/bep3/parameters";
   const bep3ParamsResponse = await fetch(bep3Params);
   const bep3ParamsData = await bep3ParamsResponse.json();
+  return bep3ParamsData
+}
+
+var supplyLimitByDenom = (denom, bep3ParamsData) => {
   const assetParams = bep3ParamsData.result.asset_params;
 
   const denomParams = assetParams.find(
@@ -79,16 +87,20 @@ var supplyLimitByDenom = async (denom) => {
   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
 };
 
-var getRewardApyForDenom = async (denom, lockedDenomBalance, kavaPrice) => {
+var getIncentiveParams = async () => {
   const incentiveParamsUrl = BASE_URL + "/incentive/parameters";
   const incentiveParamsResponse = await fetch(incentiveParamsUrl);
   const incentiveData = await incentiveParamsResponse.json();
-  const incentiveResult = incentiveData.result;
+  return incentiveData;
+}
+
+var getRewardApyForDenom = (denom, lockedDenomBalance, kavaPrice, incentiveParamsData) => {
+  const incentiveResult = incentiveParamsData.result;
   let ukavaRewardsPerPeriod = 0;
   let nanoSecondsPerPeriod = 0;
   if(incentiveResult) {
     if(incentiveResult.rewards && incentiveResult.rewards.length > 0) {
-      const denomRewards = incentiveData.result.rewards.find(
+      const denomRewards = incentiveParamsData.result.rewards.find(
         (item) => item.collateral_type.toUpperCase() === denom.toUpperCase()
       );
       ukavaRewardsPerPeriod = Number(denomRewards.available_rewards.amount);
@@ -113,12 +125,15 @@ function rewardPeriodsPerYear(ns) {
   return NanoSecondsPerYear / Number(ns)
 }
 
-var getValueRewardsDistributedForDenom = async (denom, kavaPrice, rewardsStartTime) => {
-  if(!rewardsStartTime) { return 0.00 }
+var getRewardPeriodsData = async () => {
   const rewardPeriodsURL = BASE_URL + "/incentive/rewardperiods";
   const rewardPeriodsRepsonse = await fetch(rewardPeriodsURL);
   const rewardPeriodsData = await rewardPeriodsRepsonse.json();
+  return rewardPeriodsData;
+}
 
+var getValueRewardsDistributedForDenom = (rewardPeriodsData, denom, kavaPrice, rewardsStartTime) => {
+  if(!rewardsStartTime) { return 0.00 }
   let kavaDistributed = 0;
 
   if(rewardPeriodsData.result) {
@@ -155,10 +170,10 @@ var updateKavaPriceData = (kavaPrice, kavaPercentChange) => {
   document.getElementById("PERCENT-CHANGE-KAVA").innerHTML = kavaPercentChangeFinal;
 }
 
-var setDenomInfo = async (priceDenom, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
+var setDenomInfo = async (bep3ParamsData, incentiveParamsData, priceDenom, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
   let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
   let denomTotalSupply = await totalAmountOnPlatformByDenom(platformDenom);
-  let denomLimit = await supplyLimitByDenom(platformDenom)
+  let denomLimit = supplyLimitByDenom(platformDenom, bep3ParamsData)
   let denomTotalSupplyValue;
 
   if(denomTotalSupply) {
@@ -195,7 +210,7 @@ var setDenomInfo = async (priceDenom, platformDenom, denomLockedId, usdxAmount, 
 
   if(kavaPrice && denomLockedValue && incentiveDenom) {
     const denomValueLocked = Number(denomPrice) * Number(denomLockedValue)
-    const denomRewardAPY = await getRewardApyForDenom(incentiveDenom, denomValueLocked, kavaPrice)
+    const denomRewardAPY = getRewardApyForDenom(incentiveDenom, denomValueLocked, kavaPrice, incentiveParamsData)
     document.getElementById(denomApyId).innerHTML = denomRewardAPY;
   }
 
@@ -245,10 +260,14 @@ var updateDisplayValues = async () => {
     bnbBorrowed = bnbPlatformAmounts.borrowed;
     bnbFees = bnbPlatformAmounts.fees;
   }
-  let bnbUsdxLimit = await usdxDebtLimitByDenom('BNB-A')
 
+  const bep3ParamsData = await getBep3ParamsData();
+  const cdpPparamsData = await getCdpParameters();
+  const incentiveParamsData = await getIncentiveParams();
+
+  let bnbUsdxLimit = await usdxDebtLimitByDenom('BNB-A', cdpPparamsData)
   let bnbUsdxAmount = setUsdxAmount(bnbUsdxLimit, bnbPlatformAmounts, bnbBorrowed, bnbFees)
-  let bnbInfo = await setDenomInfo('bnb', 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'bnbAPY');
+  let bnbInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'bnb', 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'bnbAPY');
   let bnbTotalSupplyValue = bnbInfo.denomTotalSupplyValue;
 
   let btcPlatformAmounts = await totalLockedAndBorrowedByDenom('btcb-a');
@@ -260,9 +279,9 @@ var updateDisplayValues = async () => {
     btcBorrowed = btcPlatformAmounts.borrowed;
     btcFees = btcPlatformAmounts.fees;
   }
-  let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A')
+  let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A', cdpPparamsData)
   let btcUsdxAmount = setUsdxAmount(btcUsdxLimit, btcPlatformAmounts, btcBorrowed, btcFees)
-  let btcInfo = await setDenomInfo('btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'btcAPY');
+  let btcInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'btcAPY');
   let btcTotalSupplyValue = btcInfo.denomTotalSupplyValue;
   let busdPlatformAmounts = await totalLockedAndBorrowedByDenom('busd-a');
   let busdLocked;
@@ -273,9 +292,9 @@ var updateDisplayValues = async () => {
     busdBorrowed = busdPlatformAmounts.borrowed;
     busdFees = busdPlatformAmounts.fees;
   }
-  let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A')
+  let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A', cdpPparamsData)
   let busdUsdxAmount = setUsdxAmount(busdUsdxLimit, busdPlatformAmounts, busdBorrowed, busdFees)
-  let busdInfo = await setDenomInfo('busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'busdAPY');
+  let busdInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'busdAPY');
   let busdTotalSupplyValue = busdInfo.denomTotalSupplyValue;
 
   let xrpPlatformAmounts = await totalLockedAndBorrowedByDenom('xrpb-a');
@@ -288,9 +307,9 @@ var updateDisplayValues = async () => {
     xrpBorrowed = xrpPlatformAmounts.borrowed;
     xrpFees = xrpPlatformAmounts.fees;
   }
-  let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A')
+  let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A', cdpPparamsData)
   let xrpUsdxAmount = setUsdxAmount(xrpUsdxLimit, xrpPlatformAmounts, xrpBorrowed, xrpFees)
-  let xrpInfo = await setDenomInfo('xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, null, 'xrpAPY');
+  let xrpInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, null, 'xrpAPY');
   let xrpTotalSupplyValue = xrpInfo.denomTotalSupplyValue;
 
   let tvl = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
@@ -315,9 +334,10 @@ var updateDisplayValues = async () => {
   setUsdxAmountsByDenom('xrp', xrpUsdxAmount, xrpUsdxLimit)
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
 
-  const bnbValueDistributed = await getValueRewardsDistributedForDenom('bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
-  const busdValueDistributed = await getValueRewardsDistributedForDenom('busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
-  const btcbValueDistributed = await getValueRewardsDistributedForDenom('btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
+  const rewardPeriodsData = await getRewardPeriodsData();
+  const bnbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
+  const busdValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
+  const btcbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
