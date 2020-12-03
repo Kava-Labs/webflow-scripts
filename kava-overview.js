@@ -309,7 +309,7 @@ var updateDisplayValues = async () => {
   }
   let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A', cdpPparamsData)
   let xrpUsdxAmount = setUsdxAmount(xrpUsdxLimit, xrpPlatformAmounts, xrpBorrowed, xrpFees)
-  let xrpInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, null, 'xrpAPY');
+  let xrpInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, 'xrpb-a', 'xrpAPY');
   let xrpTotalSupplyValue = xrpInfo.denomTotalSupplyValue;
 
   let tvl = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
