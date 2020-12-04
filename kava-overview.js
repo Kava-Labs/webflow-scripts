@@ -34,6 +34,13 @@ var totalLockedAndBorrowedByDenom = async (denom) => {
   }
 };
 
+var getTotalSupplied = async () => {
+  let acctUrl = BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp';
+  const acctResponse = await fetch(acctUrl);
+  const acctData = await acctResponse.json();
+  return acctData.result.value.coins;
+}
+
 var getCollateralPrice = async (market) => {
   const priceURL = BASE_URL + "/pricefeed/price/" + market;
   const priceResponse = await fetch(priceURL);
@@ -170,15 +177,22 @@ var updateKavaPriceData = (kavaPrice, kavaPercentChange) => {
   document.getElementById("PERCENT-CHANGE-KAVA").innerHTML = kavaPercentChangeFinal;
 }
 
-var setDenomInfo = async (bep3ParamsData, incentiveParamsData, priceDenom, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
-  let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
-  let denomTotalSupply = await totalAmountOnPlatformByDenom(platformDenom);
-  let denomLimit = supplyLimitByDenom(platformDenom, bep3ParamsData)
-  let denomTotalSupplyValue;
+var setDenomTotalBorrowed = (usdxAmount, denomBorrowedId) => {
+  const usdxBorrowedInMil = usdxAmount/FACTOR_SIX;
+  const usdxBorrowedFormatted = usdFormatter.format(usdxBorrowedInMil);
+  const usdxBorrowedDisplay = usdxBorrowedFormatted + "M";
+  document.getElementById(denomBorrowedId).innerHTML = usdxBorrowedDisplay;
+}
 
-  if(denomTotalSupply) {
-    const denomTotalSupplyCoin = denomTotalSupply/FACTOR_EIGHT;
-    denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
+var setKavaChainDenomInfo = async (suppliedAmounts, supplyDenom, priceDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
+  let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
+
+  let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === supplyDenom).amount
+
+
+  if(denomSupplyFromAcct) {
+    const denomTotalSupplyCoin = denomSupplyFromAcct/FACTOR_SIX;
+    const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
     const denomLockedInMil = denomTotalSupplyValue/FACTOR_SIX;
     const denomLockedFormatted = usdFormatter.format(denomLockedInMil);
     const denomLockedDisplay = denomLockedFormatted + "M";
@@ -186,10 +200,36 @@ var setDenomInfo = async (bep3ParamsData, incentiveParamsData, priceDenom, platf
   }
 
   if(usdxAmount) {
-    const usdxBorrowedInMil = usdxAmount/FACTOR_SIX;
-    const usdxBorrowedFormatted = usdFormatter.format(usdxBorrowedInMil);
-    const usdxBorrowedDisplay = usdxBorrowedFormatted + "M";
-    document.getElementById(denomBorrowedId).innerHTML = usdxBorrowedDisplay;
+    setDenomTotalBorrowed(usdxAmount, denomBorrowedId);
+  }
+
+  if(kavaPrice && denomLockedValue && incentiveDenom) {
+    const denomValueLocked = Number(denomPrice) * Number(denomLockedValue)
+    const denomRewardAPY = getRewardApyForDenom(incentiveDenom, denomValueLocked, kavaPrice, incentiveParamsData)
+    document.getElementById(denomApyId).innerHTML = denomRewardAPY;
+  }
+}
+
+var setBep3DenomInfo = async (suppliedAmounts, bep3ParamsData, incentiveParamsData, priceDenom, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
+  let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
+  let denomTotalSupply = await totalAmountOnPlatformByDenom(platformDenom);
+  let denomLimit = supplyLimitByDenom(platformDenom, bep3ParamsData)
+  let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === platformDenom).amount
+
+  let denomTotalSupplyValue =  Number((denomTotalSupply/FACTOR_EIGHT) * denomPrice)
+
+
+  if(denomSupplyFromAcct) {
+    const denomTotalSupplyCoin = denomSupplyFromAcct/FACTOR_EIGHT;
+    const acctTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
+    const denomLockedInMil = acctTotalSupplyValue/FACTOR_SIX;
+    const denomLockedFormatted = usdFormatter.format(denomLockedInMil);
+    const denomLockedDisplay = denomLockedFormatted + "M";
+    document.getElementById(denomLockedId).innerHTML = denomLockedDisplay;
+  }
+
+  if(usdxAmount) {
+    setDenomTotalBorrowed(usdxAmount, denomBorrowedId);
   }
 
   if(denomLimit && denomTotalSupply) {
@@ -251,6 +291,8 @@ var updateDisplayValues = async () => {
     updateKavaPriceData(kavaPrice, kavaPercentChange);
   }
 
+  let suppliedAmounts = await getTotalSupplied();
+
   let bnbPlatformAmounts = await totalLockedAndBorrowedByDenom('bnb-a');
   let bnbLocked;
   let bnbBorrowed;
@@ -267,7 +309,7 @@ var updateDisplayValues = async () => {
 
   let bnbUsdxLimit = await usdxDebtLimitByDenom('BNB-A', cdpPparamsData)
   let bnbUsdxAmount = setUsdxAmount(bnbUsdxLimit, bnbPlatformAmounts, bnbBorrowed, bnbFees)
-  let bnbInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'bnb', 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'bnbAPY');
+  let bnbInfo = await setBep3DenomInfo(suppliedAmounts, bep3ParamsData, incentiveParamsData, 'bnb', 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'bnbAPY');
   let bnbTotalSupplyValue = bnbInfo.denomTotalSupplyValue;
 
   let btcPlatformAmounts = await totalLockedAndBorrowedByDenom('btcb-a');
@@ -281,7 +323,7 @@ var updateDisplayValues = async () => {
   }
   let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A', cdpPparamsData)
   let btcUsdxAmount = setUsdxAmount(btcUsdxLimit, btcPlatformAmounts, btcBorrowed, btcFees)
-  let btcInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'btcAPY');
+  let btcInfo = await setBep3DenomInfo(suppliedAmounts, bep3ParamsData, incentiveParamsData, 'btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'btcAPY');
   let btcTotalSupplyValue = btcInfo.denomTotalSupplyValue;
   let busdPlatformAmounts = await totalLockedAndBorrowedByDenom('busd-a');
   let busdLocked;
@@ -294,11 +336,10 @@ var updateDisplayValues = async () => {
   }
   let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A', cdpPparamsData)
   let busdUsdxAmount = setUsdxAmount(busdUsdxLimit, busdPlatformAmounts, busdBorrowed, busdFees)
-  let busdInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'busdAPY');
+  let busdInfo = await setBep3DenomInfo(suppliedAmounts, bep3ParamsData, incentiveParamsData, 'busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'busdAPY');
   let busdTotalSupplyValue = busdInfo.denomTotalSupplyValue;
 
   let xrpPlatformAmounts = await totalLockedAndBorrowedByDenom('xrpb-a');
-
   let xrpLocked;
   let xrpBorrowed;
   let xrpFees;
@@ -309,21 +350,34 @@ var updateDisplayValues = async () => {
   }
   let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A', cdpPparamsData)
   let xrpUsdxAmount = setUsdxAmount(xrpUsdxLimit, xrpPlatformAmounts, xrpBorrowed, xrpFees)
-  let xrpInfo = await setDenomInfo(bep3ParamsData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, 'xrpb-a', 'xrpAPY');
+  let xrpInfo = await setBep3DenomInfo(suppliedAmounts, bep3ParamsData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, 'xrpb-a', 'xrpAPY');
   let xrpTotalSupplyValue = xrpInfo.denomTotalSupplyValue;
 
+  let ukavaPlatformAmounts = await totalLockedAndBorrowedByDenom('ukava-a');
+  let ukavaLocked;
+  let ukavaBorrowed;
+  let ukavaFees;
+  if (ukavaPlatformAmounts) {
+    ukavaLocked = ukavaPlatformAmounts.locked;
+    ukavaBorrowed = ukavaPlatformAmounts.borrowed;
+    ukavaFees = ukavaPlatformAmounts.fees;
+  }
+  let ukavaUsdxLimit = await usdxDebtLimitByDenom('UKAVA-A', cdpPparamsData)
+
+  let ukavaUsdxAmount = setUsdxAmount(ukavaUsdxLimit, ukavaPlatformAmounts, ukavaBorrowed, ukavaFees)
+  await setKavaChainDenomInfo(suppliedAmounts, 'ukava', 'kava', 'TL-KAVA', ukavaUsdxAmount, 'TB-KAVA', kavaPrice, ukavaLocked, null, 'kavaAPY');
   let tvl = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
   const totalSupplyValueDisplay = usdFormatter.format(tvl);
   const totalSupplyValueDisplaySliced = totalSupplyValueDisplay.slice(1, totalSupplyValueDisplay.length);
   document.getElementById("TVL").innerHTML = totalSupplyValueDisplaySliced + " USD";
 
-  let totalUsdxAmount = bnbUsdxAmount + btcUsdxAmount + busdUsdxAmount + xrpUsdxAmount;
+  let totalUsdxAmount = bnbUsdxAmount + btcUsdxAmount + busdUsdxAmount + xrpUsdxAmount + ukavaUsdxAmount;
   const totalBorrowedDisplay = usdFormatter.format(totalUsdxAmount);
   const totalBorrowedDisplaySliced = totalBorrowedDisplay.slice(1, totalBorrowedDisplay.length);
   document.getElementById("TVB").innerHTML = totalBorrowedDisplaySliced + " USDX";
 
   let totalUsdxBorrowed = bnbBorrowed + btcBorrowed + busdBorrowed + xrpBorrowed;
-  let totalUsdxLimit = bnbUsdxLimit + btcUsdxLimit + busdUsdxLimit + xrpUsdxLimit;
+  let totalUsdxLimit = bnbUsdxLimit + btcUsdxLimit + busdUsdxLimit + xrpUsdxLimit + ukavaUsdxLimit;
 
   const usdxAmountDisplay = usdFormatter.format(totalUsdxAmount)
   const usdxAmountDisplaySliced = usdxAmountDisplay.slice(1, usdxAmountDisplay.length-3);
@@ -332,13 +386,15 @@ var updateDisplayValues = async () => {
   setUsdxAmountsByDenom('btc', btcUsdxAmount, btcUsdxLimit)
   setUsdxAmountsByDenom('busd', busdUsdxAmount, busdUsdxLimit)
   setUsdxAmountsByDenom('xrp', xrpUsdxAmount, xrpUsdxLimit)
+  setUsdxAmountsByDenom('kava', ukavaUsdxAmount, ukavaUsdxLimit)
   document.getElementById("USDXMINTED").innerHTML = usdxAmountDisplaySliced + " USDX";
 
   const rewardPeriodsData = await getRewardPeriodsData();
   const bnbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
   const busdValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
   const btcbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
-  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed;
+  const xrpbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("REWARDS_DISTRIBUTED").innerHTML = valueDistributedDisplaySliced + " USD";
