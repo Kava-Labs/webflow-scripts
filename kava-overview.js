@@ -184,11 +184,10 @@ var setDenomTotalBorrowed = (usdxAmount, denomBorrowedId) => {
   document.getElementById(denomBorrowedId).innerHTML = usdxBorrowedDisplay;
 }
 
-var setKavaChainDenomInfo = async (suppliedAmounts, supplyDenom, priceDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
+var setKavaChainDenomInfo = async (suppliedAmounts, incentiveParamsData, supplyDenom, priceDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
   let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
 
   let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === supplyDenom).amount
-
 
   if(denomSupplyFromAcct) {
     const denomTotalSupplyCoin = denomSupplyFromAcct/FACTOR_SIX;
@@ -365,7 +364,7 @@ var updateDisplayValues = async () => {
   let ukavaUsdxLimit = await usdxDebtLimitByDenom('UKAVA-A', cdpPparamsData)
 
   let ukavaUsdxAmount = setUsdxAmount(ukavaUsdxLimit, ukavaPlatformAmounts, ukavaBorrowed, ukavaFees)
-  await setKavaChainDenomInfo(suppliedAmounts, 'ukava', 'kava', 'TL-KAVA', ukavaUsdxAmount, 'TB-KAVA', kavaPrice, ukavaLocked, null, 'kavaAPY');
+  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'ukava', 'kava', 'TL-KAVA', ukavaUsdxAmount, 'TB-KAVA', kavaPrice, ukavaLocked, 'ukava-a', 'kavaAPY');
   let tvl = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
   const totalSupplyValueDisplay = usdFormatter.format(tvl);
   const totalSupplyValueDisplaySliced = totalSupplyValueDisplay.slice(1, totalSupplyValueDisplay.length);
@@ -394,16 +393,19 @@ var updateDisplayValues = async () => {
   const busdValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
   const btcbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const xrpbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
-  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed;
+  const kavaValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'ukava-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed + kavaValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("REWARDS_DISTRIBUTED").innerHTML = valueDistributedDisplaySliced + " USD";
 };
 
   var main = async () => {
-    await updateDisplayValues();
-    await sleep(60000);
-    main()
+    Promise.all(
+      await updateDisplayValues(),
+      await sleep(60000),
+      main()
+    )
   }
 
   var sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
