@@ -11,6 +11,10 @@ var getKavaPrice = async () => {
   return { price: priceData.lastPrice, percentChange: priceData.priceChangePercent };
 };
 
+var isKavaNativeAsset = (denom) => {
+  return ['ukava-a', 'usdx', 'hard'].includes(denom)
+}
+
 var totalLockedAndBorrowedByDenom = async (denom) => {
   let denomCdpsURL = BASE_URL + `/cdp/cdps/collateralType/${denom}`;
   let cdpResponse = await fetch(denomCdpsURL);
@@ -28,7 +32,7 @@ var totalLockedAndBorrowedByDenom = async (denom) => {
   }, {});
 
   return {
-    locked: Number(collateral/FACTOR_EIGHT),
+    locked: isKavaNativeAsset(denom) ? Number(collateral/FACTOR_SIX) : Number(collateral/FACTOR_EIGHT),
     borrowed: Number(principal/FACTOR_SIX),
     fees: Number(accumulated_fees/FACTOR_SIX)
   }
