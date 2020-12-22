@@ -67,46 +67,6 @@ var tLABBD = async (denom) => {
   }
 };
 
-// getTotalSupplied
-var getTS = async () => {
-  let acctUrl = BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp';
-  const acctResponse = await fetch(acctUrl);
-  const acctData = await acctResponse.json();
-  return acctData.result.value.coins;
-}
-
-// getCdpParameters
-var getCP = async () => {
-  const usdxLimitURL = BASE_URL + "/cdp/parameters";
-  const paramsResponse = await fetch(usdxLimitURL);
-  const paramsData = await paramsResponse.json();
-  return paramsData;
-}
-
-// getBep3ParamsData
-var getBPD = async () => {
-  const bep3Params = BASE_URL + "/bep3/parameters";
-  const bep3ParamsResponse = await fetch(bep3Params);
-  const bep3ParamsData = await bep3ParamsResponse.json();
-  return bep3ParamsData
-}
-
-// getBnbOnPlatform
-var getBOP = async () => {
-  const supplyURL = BASE_URL + "/bep3/supplies";
-  const supplyResponse = await fetch(supplyURL);
-  const supplyData = await supplyResponse.json();
-  return supplyData
-}
-
-// totalAmountOnPlatform
-var tAOP = async () => {
-  const supplyURL = BASE_URL + "/supply/total";
-  const supplyResponse = await fetch(supplyURL);
-  const supplyData = await supplyResponse.json();
-  return supplyData
-}
-
 // bnbAmountOnPlatform
 var bAOP = (data) => {
   const denomData = data.result.find((d) => d.current_supply.denom === 'bnb')
@@ -117,14 +77,6 @@ var bAOP = (data) => {
 var tAOPBD = (data, denom) => {
   const denomData = data.result.find((d) => d.denom === denom)
   return Number(denomData.amount)
-}
-
-// getIncentiveParams
-var getIP = async () => {
-  const incentiveParamsUrl = BASE_URL + "/incentive/parameters";
-  const incentiveParamsResponse = await fetch(incentiveParamsUrl);
-  const incentiveData = await incentiveParamsResponse.json();
-  return incentiveData;
 }
 
 // getRewardApyForDenom
@@ -336,12 +288,22 @@ var updateDV = async () => {
 
 
   // get main asset data
-  let suppliedAmounts = await getTS();
-  const supplyData = await tAOP();
-  const bnbSupplyData = await getBOP();
-  const bep3ParamsData = await getBPD();
-  const cdpParamsData = await getCP();
-  const incentiveParamsData = await getIP();
+  const [saData, sData, bnbSDdata, bep3Data, cdpD, ipD] = await Promise.all([
+    fetch(BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
+    fetch(BASE_URL + "/supply/total"),
+    fetch(BASE_URL + "/bep3/supplies"),
+    fetch(BASE_URL + "/bep3/parameters"),
+    fetch(BASE_URL + "/cdp/parameters"),
+    fetch(BASE_URL + "/incentive/parameters")
+  ])
+
+  const suppliedAmountJson = await saData.json()
+  const suppliedAmounts = suppliedAmountJson.result.value.coins
+  const supplyData = await sData.json()
+  const bnbSupplyData = await bnbSDdata.json()
+  const bep3ParamsData = await bep3Data.json()
+  const cdpParamsData = await cdpD.json()
+  const incentiveParamsData = await ipD.json()
 
   // new bnb
   let bnbPlatformAmounts = await tLABBD('bnb-a');
