@@ -236,7 +236,7 @@ var updateDisplayValues = async () => {
   const btcbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const xrpbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
   const kavaValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'ukava-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
-  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed; // + kavaValueDistributed;
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed + kavaValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("TOTAL-REWARDS-DISTRIBUTED").innerHTML = valueDistributedDisplaySliced;
@@ -348,14 +348,14 @@ var updateDisplayValues = async () => {
   document.getElementById("TOTAL-VALUE-LOCKED").innerHTML = totalSupplyValueDisplaySliced;
 };
 
-  var main = async () => {
-    Promise.all(
-      await updateDisplayValues(),
-      await sleep(60000),
-      main()
-    )
-  }
+var main = async () => {
+  Promise.all(
+    await updateDisplayValues(),
+    await sleep(60000),
+    main()
+  )
+}
 
-  var sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
+var sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
 
- main();
+main();
