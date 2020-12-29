@@ -283,7 +283,7 @@ var updateDV = async () => {
   const xrpbReward = getVRDFD(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
   const kavaReward = getVRDFD(rewardPeriodsData, 'ukava-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
   // const hardReward = getVRDFD(rewardPeriodsData, 'hard-a', kavaPrice, new Date("2020-12-28T14:00:14.333506701Z"));
-  const totalReward = bnbReward + busdReward + btcbReward + xrpbReward + kavaReward; // + kavaReward;
+  const totalReward = bnbReward + busdReward + btcbReward + xrpbReward + kavaReward; // + hardReward;
 
 
 
@@ -480,17 +480,17 @@ var updateDV = async () => {
 
 
   // new hard
-  // let hardPlatformAmounts = await tLABBD('hard-a');
-  // let hardLocked;
-  // let hardBorrowed;
-  // let hardFees;
-  // if (hardPlatformAmounts) {
-  //   hardLocked = hardPlatformAmounts.locked;
-  //   hardBorrowed = hardPlatformAmounts.borrowed;
-  //   hardFees = hardPlatformAmounts.fees;
-  // }
-  // let hardUsdxLimit = await uDLBD('HARD-A', cdpParamsData)
-  // let hardUSDX = setUA(hardUsdxLimit, hardPlatformAmounts, hardBorrowed, hardFees)
+  let hardPlatformAmounts = await tLABBD('hard-a');
+  let hardLocked;
+  let hardBorrowed;
+  let hardFees;
+  if (hardPlatformAmounts) {
+    hardLocked = hardPlatformAmounts.locked;
+    hardBorrowed = hardPlatformAmounts.borrowed;
+    hardFees = hardPlatformAmounts.fees;
+  }
+  let hardUsdxLimit = await uDLBD('HARD-A', cdpParamsData)
+  let hardUSDX = setUA(hardUsdxLimit, hardBorrowed, hardFees)
   let hardPrice = Number(hardMD.lastPrice);
   const hardPCP = Number(hardMD.priceChangePercent);
   let { hardUsd, hardMC, hardSupply } = await setDTSV(supplyData, bep3ParamsData, hardPrice, 'hard');
@@ -498,22 +498,22 @@ var updateDV = async () => {
   // // set hard info in UI
   setDV(usdF.format(hardPrice), 'price-hard');
   setDPD(hardPCP, 'pc-hard');
-  // let hardFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'hard').amount;
-  // const hardSupplied = setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-hard');
-  // setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-m-hard');
+  let hardFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'hard').amount;
+  const hardSupplied = setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-hard');
+  setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-m-hard');
   // setDV(usdF.format(hardReward), 'te-hard');
   // setDV(usdF.format(hardReward), 'te-m-hard');
   // setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-hard');
   // setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-m-hard');
-  // setUABD('hard', hardUSDX, hardUsdxLimit);
+  setUABD('hard', hardUSDX, hardUsdxLimit);
 
 
   // Total Assets Supplied
-  const totalAS = bnbSupplied + busdSupplied + btcSupplied + xrpbSupplied + kavaSupplied //+ hardSupplied
+  const totalAS = bnbSupplied + busdSupplied + btcSupplied + xrpbSupplied + kavaSupplied + hardSupplied
    setDV(formatMNDS(totalAS), "t-a-s");
 
   // Total Assets Borrowed
-  let totalUSDX = bnbUSDX + btcUSDX + busdUSDX + xrpUSDX + ukavaUSDX; // + hardUSDX;
+  let totalUSDX = bnbUSDX + btcUSDX + busdUSDX + xrpUSDX + ukavaUSDX + hardUSDX;
   setDV(formatMNDS(totalUSDX), 't-a-b');
 
 
