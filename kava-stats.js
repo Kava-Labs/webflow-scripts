@@ -282,8 +282,8 @@ var updateDV = async () => {
   const btcbReward = getVRDFD(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const xrpbReward = getVRDFD(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
   const kavaReward = getVRDFD(rewardPeriodsData, 'ukava-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
-  // const hardReward = getVRDFD(rewardPeriodsData, 'hard-a', kavaPrice, new Date("2020-12-28T14:00:14.333506701Z"));
-  const totalReward = bnbReward + busdReward + btcbReward + xrpbReward + kavaReward; // + hardReward;
+  const hardReward = getVRDFD(rewardPeriodsData, 'hard-a', kavaPrice, new Date("2020-12-28T14:00:14.333506701Z"));
+  const totalReward = bnbReward + busdReward + btcbReward + xrpbReward + kavaReward + hardReward;
 
 
 
@@ -501,10 +501,10 @@ var updateDV = async () => {
   let hardFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'hard').amount;
   const hardSupplied = setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-hard');
   setDTS(hardFromSuppliedAccount, FACTOR_SIX, hardPrice, 'ts-m-hard');
-  // setDV(usdF.format(hardReward), 'te-hard');
-  // setDV(usdF.format(hardReward), 'te-m-hard');
-  // setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-hard');
-  // setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-m-hard');
+  setDV(usdF.format(hardReward), 'te-hard');
+  setDV(usdF.format(hardReward), 'te-m-hard');
+  setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-hard');
+  setDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-m-hard');
   setUABD('hard', hardUSDX, hardUsdxLimit);
 
 

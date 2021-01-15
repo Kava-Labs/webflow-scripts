@@ -224,8 +224,8 @@ var updateDisplayValues = async () => {
   const btcbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
   const xrpbValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'xrpb-a', kavaPrice, new Date("2020-12-02T14:00:14.333506701Z"));
   const kavaValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'ukava-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
-  // const hardValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'hard-a', kavaPrice, new Date("2020-12-14T14:00:14.333506701Z"));
-  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed + kavaValueDistributed; // + hardValueDistributed;
+  const hardValueDistributed = getValueRewardsDistributedForDenom(rewardPeriodsData, 'hard-a', kavaPrice, new Date("2021-01-15T14:00:14.333506701Z"));
+  const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed + kavaValueDistributed + hardValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
   document.getElementById("TOTAL-REWARDS-DISTRIBUTED").innerHTML = valueDistributedDisplaySliced;
@@ -322,7 +322,7 @@ var updateDisplayValues = async () => {
   let hardUsdxLimit = await usdxDebtLimitByDenom('HARD-A', cdpParamsData)
 
   let hardUsdxAmount = setUsdxAmount(hardUsdxLimit, hardPlatformAmounts, hardBorrowed, hardFees)
-  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'hard', 'hard', 'TL-HARD', hardUsdxAmount, 'TB-HARD', kavaPrice, hardLocked, null, 'APY-HARD');
+  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'hard', 'hard', 'TL-HARD', hardUsdxAmount, 'TB-HARD', kavaPrice, hardLocked, 'hard-a', 'APY-HARD');
 
 
   let totalValueSupplied = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
