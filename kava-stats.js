@@ -27,7 +27,7 @@ var formatMNDS = (v) => {
 
 // isKavaNativeAsset
 var isKNA = (d) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava'].includes(d)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(d)
 }
 
 var denomLabel = (v) => {
