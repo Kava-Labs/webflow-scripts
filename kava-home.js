@@ -5,7 +5,7 @@ const BASE_URL = "https://kava4.data.kava.io";
 var usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 var isKavaNativeAsset = (denom) => {
-  return ['ukava-a', 'usdx', 'hard'].includes(denom)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(denom)
 }
 
 var totalLockedAndBorrowedByDenom = (cdpRes, denom) => {
