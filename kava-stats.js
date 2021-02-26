@@ -44,12 +44,7 @@ var denomLabel = (v) => {
 }
 
 // totalLockedAndBorrowedByDenom
-var tLABBD = async (denom) => {
-  let denomCdpsURL = BASE_URL + `/cdp/cdps/collateralType/${denom}`;
-  let cdpResponse = await fetch(denomCdpsURL);
-  let cdpData = await cdpResponse.json();
-  let cdpRes = cdpData && cdpData.result;
-
+var tLABBD = async (cdpRes) => {
   var { collateral, principal, accumulated_fees } = cdpRes.reduce(function(accumulator, item) {
     Object.keys(item.cdp).forEach(function(key) {
       let c = ['collateral', 'principal', 'accumulated_fees'];
@@ -179,14 +174,6 @@ var setDTSV = async (supplyData, bep3ParamsData, denomPrice, platformDenom) => {
   return data;
 };
 
-// getRewardPeriodsData
-var getRPD = async () => {
-  const rewardPeriodsURL = BASE_URL + "/incentive/rewardperiods";
-  const rewardPeriodsRepsonse = await fetch(rewardPeriodsURL);
-  const rewardPeriodsData = await rewardPeriodsRepsonse.json();
-  return rewardPeriodsData;
-}
-
 // getValueRewardsDistributedForDenom
 var getVRDFD = (rewardPeriodsData, denom, kavaPrice, rewardsStartTime) => {
   if(!rewardsStartTime) { return 0.00 }
@@ -255,14 +242,48 @@ var setDC = (color, cssId) =>{
 // updateDisplayValues
 var updateDV = async () => {
   // set price info for denoms
-  const [kavaMR, hardMR, bnbMR, busdMR, btcbMR, xrpbMR, usdxMR] = await Promise.all([
+  const [
+    kavaMR,
+    hardMR,
+    bnbMR,
+    busdMR,
+    btcbMR,
+    xrpbMR,
+    usdxMR,
+    saData,
+    sData,
+    bnbSDdata,
+    bep3Data,
+    cdpD,
+    ipD,
+    rPDR,
+    cdpRBnb,
+    cdpRBusd,
+    cdpRBtc,
+    cdpRXrp,
+    cdpRKava,
+    cdpRHard,
+  ] = await Promise.all([
     fetch(BINANACE_URL + "/ticker/24hr?symbol=KAVAUSDT"),
     fetch(BINANACE_URL + "/ticker/24hr?symbol=HARDUSDT"),
     fetch(BINANACE_URL + "/ticker/24hr?symbol=BNBUSDT"),
     fetch(BINANACE_URL + "/ticker/24hr?symbol=BUSDUSDT"),
     fetch(BINANACE_URL + "/ticker/24hr?symbol=BTCUSDT"),
     fetch(BINANACE_URL + "/ticker/24hr?symbol=XRPUSDT"),
-    fetch('https://api.coingecko.com/api/v3/coins/usdx')
+    fetch('https://api.coingecko.com/api/v3/coins/usdx'),
+    fetch(BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
+    fetch(BASE_URL + "/supply/total"),
+    fetch(BASE_URL + "/bep3/supplies"),
+    fetch(BASE_URL + "/bep3/parameters"),
+    fetch(BASE_URL + "/cdp/parameters"),
+    fetch(BASE_URL + "/incentive/parameters"),
+    fetch(BASE_URL + "/incentive/rewardperiods"),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/bnb-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/busd-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/btcb-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/xrpb-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/ukava-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a')
   ]);
 
   const kavaMD = await kavaMR.json();
@@ -276,7 +297,7 @@ var updateDV = async () => {
   const kavaPrice = Number(kavaMD.lastPrice);
 
   // "Total Rewards Distributed"
-  const rewardPeriodsData = await getRPD();
+  const rewardPeriodsData = await rPDR.json();
   const bnbReward = getVRDFD(rewardPeriodsData, 'bnb-a', kavaPrice, new Date("2020-07-29T14:00:14.333506701Z"));
   const busdReward = getVRDFD(rewardPeriodsData, 'busd-a', kavaPrice, new Date("2020-11-09T14:00:14.333506701Z"));
   const btcbReward = getVRDFD(rewardPeriodsData, 'btcb-a', kavaPrice, new Date("2020-11-16T14:00:14.333506701Z"));
@@ -286,17 +307,6 @@ var updateDV = async () => {
   const totalReward = bnbReward + busdReward + btcbReward + xrpbReward + kavaReward + hardReward;
 
 
-
-  // get main asset data
-  const [saData, sData, bnbSDdata, bep3Data, cdpD, ipD] = await Promise.all([
-    fetch(BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
-    fetch(BASE_URL + "/supply/total"),
-    fetch(BASE_URL + "/bep3/supplies"),
-    fetch(BASE_URL + "/bep3/parameters"),
-    fetch(BASE_URL + "/cdp/parameters"),
-    fetch(BASE_URL + "/incentive/parameters")
-  ])
-
   const suppliedAmountJson = await saData.json()
   const suppliedAmounts = suppliedAmountJson.result.value.coins
   const supplyData = await sData.json()
@@ -305,8 +315,16 @@ var updateDV = async () => {
   const cdpParamsData = await cdpD.json()
   const incentiveParamsData = await ipD.json()
 
+  const bnbCdPData = await cdpRBnb.json()
+  const busdCdPData = await cdpRBusd.json()
+  const btcCdPData = await cdpRBtc.json()
+  const xrpCdPData = await cdpRXrp.json()
+  const kavaCdPData = await cdpRKava.json()
+  const hardCdPData = await cdpRHard.json()
+
+
   // new bnb
-  let bnbPlatformAmounts = await tLABBD('bnb-a');
+  let bnbPlatformAmounts = await tLABBD(bnbCdPData.result);
   let bnbLocked;
   let bnbBorrowed;
   let bnbFees;
@@ -342,7 +360,7 @@ var updateDV = async () => {
 
 
   // new busd
-  let busdPlatformAmounts = await tLABBD('busd-a');
+  let busdPlatformAmounts = await tLABBD(busdCdPData.result);
   let busdLocked;
   let busdBorrowed;
   let busdFees;
@@ -378,7 +396,7 @@ var updateDV = async () => {
 
 
   // new btc
-  let btcPlatformAmounts = await tLABBD('btcb-a');
+  let btcPlatformAmounts = await tLABBD(btcCdPData.result);
   let btcLocked;
   let btcBorrowed;
   let btcFees;
@@ -414,7 +432,7 @@ var updateDV = async () => {
 
 
   // new xrp
-  let xrpPlatformAmounts = await tLABBD('xrpb-a');
+  let xrpPlatformAmounts = await tLABBD(xrpCdPData.result);
   let xrpLocked;
   let xrpBorrowed;
   let xrpFees;
@@ -446,11 +464,8 @@ var updateDV = async () => {
   setDAPY(xrpbPrice, xrpLocked, 'xrpb-a', kavaPrice, incentiveParamsData, 'ea-m-xrp');
   setUABD('xrp', xrpUSDX, xrpUsdxLimit);
 
-
-
-
   // new kava
-  let ukavaPlatformAmounts = await tLABBD('ukava-a');
+  let ukavaPlatformAmounts = await tLABBD(kavaCdPData.result);
   let ukavaLocked;
   let ukavaBorrowed;
   let ukavaFees;
@@ -480,7 +495,7 @@ var updateDV = async () => {
 
 
   // new hard
-  let hardPlatformAmounts = await tLABBD('hard-a');
+  let hardPlatformAmounts = await tLABBD(hardCdPData.result);
   let hardLocked;
   let hardBorrowed;
   let hardFees;
