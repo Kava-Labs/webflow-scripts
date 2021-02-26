@@ -1,0 +1,47 @@
+/*
+  metric-blur is used for the skeletons to hide api metrics until they are loaded
+
+  usage:
+
+    Setting up element classes:
+      In webflow, create a div element and add the class `metric-blur` If the
+      metric is in a table, also add `table-blur`. If you have any additional
+      change you need to make, add a new class and make them in there.
+
+       Next, find your actual metric field hold `cmd` + drag it over your div.
+       This will put your metric field inside the div. Then add the `api-metric`
+       class to your metric field. This will start it initially display: none
+       so it will look like the element has disappear.
+
+    Setting up Script:
+      First, add these three lines to the script file for the page you are
+      adding these elements to:
+        $(".metric-blur").css("background-color", "transparent")
+        $(".metric-blur").addClass('without-after');
+        $(".api-metric").css({"display": "block", "text-align": "center"})
+
+      Next, make sure the page's settings in webflow have the below css added to them.
+      Note: it has to be on every page you try to use this on.
+*/
+.metric-blur::after {
+   content: "";
+   display: block;
+   width: 100%;
+   height: 100%;
+   border-radius: 6px;
+   background-image: linear-gradient(90deg, rgba(210, 210, 210, 0) 0, rgba(210, 210, 210, .4) 50%, rgba(210, 210, 210, 0) 100%);
+   background-size: 80% 100%;
+   background-position: -150% 0;
+   background-repeat: no-repeat;
+   animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  to {
+    background-position: 350% 0;
+  }
+}
+
+.metric-blur.without-after::after {
+  content: none;
+}

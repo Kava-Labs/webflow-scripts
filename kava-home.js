@@ -26,15 +26,6 @@ var totalLockedAndBorrowedByDenom = (cdpRes, denom) => {
   }
 };
 
-var getCollateralPrice = async (market) => {
-  const priceURL = BASE_URL + "/pricefeed/price/" + market;
-  const priceResponse = await fetch(priceURL);
-  const priceData = await priceResponse.json();
-  const priceRes = priceData && priceData.result;
-  const price = Number(priceRes.price);
-  return price;
-}
-
 var totalAmountOnPlatformByDenom = (data, denom) => {
   const denomData = data.result.find((d) => d.current_supply.denom === denom)
   let amount = 0.00;
@@ -113,8 +104,8 @@ var setDenomAPY = (denomPrice, denomLockedValue, incentiveDenom, kavaPrice, ince
   document.getElementById(denomApyId).innerHTML = denomRewardAPY;
 }
 
-var setKavaChainDenomInfo = async (suppliedAmounts, incentiveParamsData, supplyDenom, priceDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
-  supplyDenom === 'ukava' ? denomPrice = kavaPrice : denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
+var setKavaChainDenomInfo = async (suppliedAmounts, incentiveParamsData, supplyDenom, denomPrice, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
+  if(supplyDenom === 'ukava') { denomPrice = kavaPrice }
 
   let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === supplyDenom).amount;
 
@@ -132,8 +123,7 @@ var setKavaChainDenomInfo = async (suppliedAmounts, incentiveParamsData, supplyD
   }
 }
 
-var setBep3DenomInfo = async (suppliedAmounts, bep3SupplyData, incentiveParamsData, priceDenom, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
-  let denomPrice = await getCollateralPrice(`${priceDenom}:usd`);
+var setBep3DenomInfo = async (suppliedAmounts, bep3SupplyData, incentiveParamsData, denomPrice, platformDenom, denomLockedId, usdxAmount, denomBorrowedId, kavaPrice, denomLockedValue, incentiveDenom, denomApyId) => {
   let denomTotalSupply = totalAmountOnPlatformByDenom(bep3SupplyData, platformDenom);
   let denomTotalSupplyValue =  Number((denomTotalSupply/FACTOR_EIGHT) * denomPrice)
 
@@ -172,6 +162,12 @@ var getValueRewardsDistributedForDenom = (rewardPeriodsData, denom, kavaPrice, r
   return Number(kavaDistributed) * Number(kavaPrice);
 };
 
+var getCollateralPrice = (priceData) => {
+  const priceRes = priceData && priceData.result;
+  const price = Number(priceRes.price);
+  return price;
+}
+
 var updateDisplayValues = async () => {
   const [
     kavaP,
@@ -186,7 +182,13 @@ var updateDisplayValues = async () => {
     xrpPA,
     bnbPA,
     kavaPA,
-    hardPA
+    hardPA,
+    btcPR,
+    busdPR,
+    xrpPR,
+    bnbPR,
+    kavaPR,
+    hardPR
   ] = await Promise.all([
     fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT'),
     fetch(BASE_URL + "/incentive/rewardperiods"),
@@ -200,7 +202,13 @@ var updateDisplayValues = async () => {
     fetch(BASE_URL + '/cdp/cdps/collateralType/xrpb-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/bnb-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/ukava-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a')
+    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
+    fetch(BASE_URL + '/pricefeed/price/btc:usd'),
+    fetch(BASE_URL + '/pricefeed/price/busd:usd'),
+    fetch(BASE_URL + '/pricefeed/price/xrp:usd'),
+    fetch(BASE_URL + '/pricefeed/price/bnb:usd'),
+    fetch(BASE_URL + '/pricefeed/price/kava:usd'),
+    fetch(BASE_URL + '/pricefeed/price/hard:usd')
   ]);
 
   const kavaPriceJson = await kavaP.json();
@@ -216,6 +224,12 @@ var updateDisplayValues = async () => {
   const bnbPlatformAmountsJson = await bnbPA.json();
   const ukavaPlatformAmountsJson = await kavaPA.json();
   const hardPlatformAmountsJson = await hardPA.json();
+  const btcPFJson = await btcPR.json();
+  const busdPFJson = await busdPR.json();
+  const xrpPFJson = await xrpPR.json();
+  const bnbPFJson = await bnbPR.json();
+  const kavaPFJson = await kavaPR.json();
+  const hardPFJson = await hardPR.json();
 
   // "Total Rewards Distributed"
   const kavaPrice = await kavaPriceJson.lastPrice;
@@ -228,7 +242,8 @@ var updateDisplayValues = async () => {
   const totalValueDistributed = bnbValueDistributed + busdValueDistributed + btcbValueDistributed + xrpbValueDistributed + kavaValueDistributed + hardValueDistributed;
   const valueDistributedDisplay = usdFormatter.format(totalValueDistributed);
   const valueDistributedDisplaySliced = valueDistributedDisplay.slice(1, valueDistributedDisplay.length);
-  document.getElementById("TOTAL-REWARDS-DISTRIBUTED").innerHTML = valueDistributedDisplaySliced;
+  const trd = document.getElementById("TOTAL-REWARDS-DISTRIBUTED")
+  trd.innerHTML = valueDistributedDisplaySliced
 
 
   const suppliedAmounts = await supAmtResp.result.value.coins;
@@ -238,6 +253,13 @@ var updateDisplayValues = async () => {
   const bnbPlatformAmounts = await totalLockedAndBorrowedByDenom(bnbPlatformAmountsJson.result, 'bnb-a')
   const ukavaPlatformAmounts = await totalLockedAndBorrowedByDenom(ukavaPlatformAmountsJson.result, 'ukava-a')
   const hardPlatformAmounts = await totalLockedAndBorrowedByDenom(hardPlatformAmountsJson.result, 'hard-a')
+
+  const btcPF = getCollateralPrice(btcPFJson)
+  const busdPF = getCollateralPrice(busdPFJson)
+  const xrpbPF = getCollateralPrice(xrpPFJson)
+  const bnbPF = getCollateralPrice(bnbPFJson)
+  const kavaPF = getCollateralPrice(kavaPFJson)
+  const hardPF = getCollateralPrice(hardPFJson)
 
   // btcb
   let btcLocked;
@@ -250,7 +272,7 @@ var updateDisplayValues = async () => {
   }
   let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A', cdpParamsData)
   let btcUsdxAmount = setUsdxAmount(btcUsdxLimit, btcPlatformAmounts, btcBorrowed, btcFees)
-  let btcInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, 'btc', 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'APY-BTC');
+  let btcInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, btcPF, 'btcb', 'TL-BTC', btcUsdxAmount, 'TB-BTC', kavaPrice, btcLocked, 'btcb-a', 'APY-BTC');
   let btcTotalSupplyValue = btcInfo.denomTotalSupplyValue;
 
   // busd
@@ -264,7 +286,7 @@ var updateDisplayValues = async () => {
   }
   let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A', cdpParamsData)
   let busdUsdxAmount = setUsdxAmount(busdUsdxLimit, busdPlatformAmounts, busdBorrowed, busdFees)
-  let busdInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, 'busd', 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'APY-BUSD');
+  let busdInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, busdPF, 'busd', 'TL-BUSD', busdUsdxAmount, 'TB-BUSD', kavaPrice, busdLocked, 'busd-a', 'APY-BUSD');
   let busdTotalSupplyValue = busdInfo.denomTotalSupplyValue;
 
   // xrpb
@@ -279,7 +301,7 @@ var updateDisplayValues = async () => {
   }
   let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A', cdpParamsData)
   let xrpUsdxAmount = setUsdxAmount(xrpUsdxLimit, xrpPlatformAmounts, xrpBorrowed, xrpFees)
-  let xrpInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, 'xrp', 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, 'xrpb-a', 'APY-XRP');
+  let xrpInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, xrpbPF, 'xrpb', 'TL-XRP', xrpUsdxAmount, 'TB-XRP', kavaPrice, xrpLocked, 'xrpb-a', 'APY-XRP');
   let xrpTotalSupplyValue = xrpInfo.denomTotalSupplyValue;
 
   // bnb
@@ -293,7 +315,7 @@ var updateDisplayValues = async () => {
   }
   let bnbUsdxLimit = await usdxDebtLimitByDenom('BNB-A', cdpParamsData)
   let bnbUsdxAmount = setUsdxAmount(bnbUsdxLimit, bnbPlatformAmounts, bnbBorrowed, bnbFees)
-  let bnbInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, 'bnb', 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'APY-BNB');
+  let bnbInfo = await setBep3DenomInfo(suppliedAmounts, bep3SupplyData, incentiveParamsData, bnbPF, 'bnb', 'TL-BNB', bnbUsdxAmount, 'TB-BNB', kavaPrice, bnbLocked, 'bnb-a', 'APY-BNB');
   let bnbTotalSupplyValue = bnbInfo.denomTotalSupplyValue;
 
    // kava
@@ -308,7 +330,7 @@ var updateDisplayValues = async () => {
   let ukavaUsdxLimit = await usdxDebtLimitByDenom('UKAVA-A', cdpParamsData)
 
   let ukavaUsdxAmount = setUsdxAmount(ukavaUsdxLimit, ukavaPlatformAmounts, ukavaBorrowed, ukavaFees)
-  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'ukava', 'kava', 'TL-KAVA', ukavaUsdxAmount, 'TB-KAVA', kavaPrice, ukavaLocked, 'ukava-a', 'APY-KAVA');
+  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'ukava', kavaPF, 'TL-KAVA', ukavaUsdxAmount, 'TB-KAVA', kavaPrice, ukavaLocked, 'ukava-a', 'APY-KAVA');
 
   // hard
   let hardLocked;
@@ -322,7 +344,7 @@ var updateDisplayValues = async () => {
   let hardUsdxLimit = await usdxDebtLimitByDenom('HARD-A', cdpParamsData)
 
   let hardUsdxAmount = setUsdxAmount(hardUsdxLimit, hardPlatformAmounts, hardBorrowed, hardFees)
-  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'hard', 'hard', 'TL-HARD', hardUsdxAmount, 'TB-HARD', kavaPrice, hardLocked, 'hard-a', 'APY-HARD');
+  await setKavaChainDenomInfo(suppliedAmounts, incentiveParamsData, 'hard', hardPF, 'TL-HARD', hardUsdxAmount, 'TB-HARD', kavaPrice, hardLocked, 'hard-a', 'APY-HARD');
 
 
   let totalValueSupplied = bnbTotalSupplyValue + btcTotalSupplyValue + busdTotalSupplyValue + xrpTotalSupplyValue;
@@ -330,7 +352,12 @@ var updateDisplayValues = async () => {
   let totalAssetValue = totalValueSupplied + totalValueBorrowed;
   const totalSupplyValueDisplay = usdFormatter.format(totalAssetValue);
   const totalSupplyValueDisplaySliced = totalSupplyValueDisplay.slice(1, totalSupplyValueDisplay.length);
-  document.getElementById("TOTAL-VALUE-LOCKED").innerHTML = totalSupplyValueDisplaySliced;
+  const tvl = document.getElementById("TOTAL-VALUE-LOCKED")
+  tvl.innerHTML = totalSupplyValueDisplaySliced
+
+  $(".metric-blur").css("background-color", "transparent")
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"})
 };
 
 var main = async () => {

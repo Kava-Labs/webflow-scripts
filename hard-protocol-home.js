@@ -66,19 +66,12 @@ var convertToCoin = (balance) => {
   return amount;
 };
 
-var getModuleBalances = async () => {
-  const accountsUrl = BASE_URL + "/harvest/accounts";
-  const accountsResponse = await fetch(accountsUrl);
-  const accountsData = await accountsResponse.json();
-  return accountsData.result.find(a => a.value.name === 'harvest').value.coins;
+var getModuleBalances = async (hardAccounts) => {
+  return hardAccounts.find(a => a.value.name === 'harvest').value.coins;
 };
 
-var getRewardPerYearByDenom = async () => {
-  const harvestParamsUrl = "https://kava4.data.kava.io/harvest/parameters";
-  const harvestParamsResponse = await fetch(harvestParamsUrl);
-  const harvestData = await harvestParamsResponse.json();
-
-  const arr = harvestData.result.liquidity_provider_schedules.map((lp) => {
+var getRewardPerYearByDenom = async (hardData) => {
+  const arr = hardData.liquidity_provider_schedules.map((lp) => {
     const reward = lp.rewards_per_second.amount;
 
     // HARD per year by denom
@@ -140,43 +133,7 @@ var getValueRewardsDistributed = async (kavaPrice) => {
   return totalRewardValue;
 }
 
-var getPrices = async () => {
-  var prices = [];
-
-  const usdxPrice = {name: USDX_DENOM, price: 1};
-  prices.push(usdxPrice);
-
-  const hardMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=HARDUSDT");
-  const hardMarketData = await hardMarketResponse.json();
-  const hardPrice = {name: HARD_DENOM, price: Number(hardMarketData.lastPrice)};
-  prices.push(hardPrice);
-
-  const kavaMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT");
-  const kavaMarketData = await kavaMarketResponse.json();
-  const kavaPrice = {name: KAVA_DENOM, price: Number(kavaMarketData.lastPrice)};
-  prices.push(kavaPrice);
-
-  const bnbMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT");
-  const bnbMarketData = await bnbMarketResponse.json();
-  const bnbPrice = {name: BNB_DENOM, price: Number(bnbMarketData.lastPrice)};
-  prices.push(bnbPrice);
-
-  const btcMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
-  const btcMarketData = await btcMarketResponse.json();
-  const btcPrice = {name: BTC_DENOM, price: Number(btcMarketData.lastPrice)};
-  prices.push(btcPrice);
-
-  const busdPrice = {name: BUSD_DENOM, price: 1};
-  prices.push(busdPrice)
-
-  const xrpMarketResponse = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=XRPUSDT");
-  const xrpMarketData = await xrpMarketResponse.json();
-  const xrpPrice = {name: XRP_DENOM, price: Number(xrpMarketData.lastPrice)};
-  prices.push(xrpPrice)
-  return prices;
-}
-
-var getTotalValues = async (prices) => {
+var getTotalValues = async (prices, hardAccounts) => {
   var conversionMap = new Map();
   conversionMap.set(USDX_DENOM, 10 ** 6);
   conversionMap.set(KAVA_DENOM, 10 ** 6);
@@ -186,15 +143,10 @@ var getTotalValues = async (prices) => {
   conversionMap.set(XRP_DENOM, 10 ** 8);
   conversionMap.set(BUSD_DENOM, 10 ** 8);
 
-  const response = await fetch("https://kava4.data.kava.io/harvest/accounts");
-  const data = await response.json();
-  const results = data && data.result;
-
-
   var totalValues = [];
-  if(results && results.length > 0) {
+  if(hardAccounts && hardAccounts.length > 0) {
     const harvestAccAddress = "kava16zr7aqvk473073s6a5jgaxus6hx2vn5laum9s3"
-    const harvestAcc =  results.find((item) => item.value.address === harvestAccAddress);
+    const harvestAcc =  hardAccounts.find((item) => item.value.address === harvestAccAddress);
     const coins = harvestAcc.value.coins;
     for(coin of coins) {
       const supply = Number(coin.amount)/conversionMap.get(coin.denom);
@@ -206,7 +158,7 @@ var getTotalValues = async (prices) => {
   return totalValues
 }
 
-var setTotalValue = (denom, cssId, totalValues) => {
+var setTotalValue = async (denom, cssId, totalValues) => {
   const denomValue = totalValues.find((item) => item.denom === denom).total_value;
   if (denomValue) {
     document.getElementById(cssId).innerHTML = usdFormatter.format(denomValue);
@@ -220,30 +172,75 @@ var setApyValue = (denom, cssId, apyByDenom) => {
 };
 
 var updateDisplayValues = async() => {
-  const prices = await getPrices();
+  const [
+    hardMarketResponse,
+    kavaMarketResponse,
+    bnbMarketResponse,
+    btcMarketResponse,
+    xrpMarketResponse,
+    hardParametersResponse,
+    hardAccountResponse
+  ] = await Promise.all([
+    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=HARDUSDT"),
+    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT"),
+    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT"),
+    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
+    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=XRPUSDT"),
+    fetch('https://kava4.data.kava.io/harvest/parameters'),
+    fetch(`${BASE_URL}/harvest/accounts`)
+  ]);
+
+  const hardPriceJson = await hardMarketResponse.json()
+  const kavaPriceJson = await kavaMarketResponse.json()
+  const bnbPriceJson = await bnbMarketResponse.json()
+  const btcPriceJson = await btcMarketResponse.json()
+  const xrpPriceJson = await xrpMarketResponse.json()
+  const hardParamsJson = await hardParametersResponse.json()
+  const hardAccountJson = await hardAccountResponse.json()
+
+  const hardParams = await hardParamsJson.result;
+  const hardAccounts = await hardAccountJson.result;
+
+  const hardPrice = await hardPriceJson.lastPrice
+  const kavaPrice = await kavaPriceJson.lastPrice
+  const bnbPrice = await bnbPriceJson.lastPrice
+  const btcPrice = await btcPriceJson.lastPrice
+  const busdPrice = 1;
+  const xrpPrice = await xrpPriceJson.lastPrice
+  const usdxPrice = 1;
+
+  const prices = [
+    { name: HARD_DENOM, price: hardPrice },
+    { name: KAVA_DENOM, price: kavaPrice },
+    { name: BNB_DENOM, price: bnbPrice },
+    { name: BTC_DENOM, price: btcPrice },
+    { name: BUSD_DENOM, price: busdPrice },
+    { name: XRP_DENOM, price: xrpPrice },
+    { name: USDX_DENOM, price: usdxPrice },
+  ]
+
   const hardTokenPrice = prices.find(p => p.name === 'hard').price;
-  const rawTotalHardDist = await getTotalHardAvailable();
+  const rawTotalHardDist = await getTotalHardAvailable(hardParams);
   const displayTotalHardDist = usdFormatter.format(rawTotalHardDist*hardTokenPrice);
   const totalHardDistUSDValue = displayTotalHardDist.slice(0, displayTotalHardDist.length);
   document.getElementById("total-hard-dist").innerHTML = totalHardDistUSDValue;
 
-  const totalValues = await getTotalValues(prices);
-  const bnbValue = setTotalValue(BNB_DENOM, 'TL-BNB', totalValues);
-  const kavaValue = setTotalValue(KAVA_DENOM, 'TL-KAVA', totalValues);
-  const usdxValue = setTotalValue(USDX_DENOM, 'TL-USDX', totalValues);
-  const hardValue = setTotalValue(HARD_DENOM, 'TL-HARD', totalValues);
-  const btcValue = setTotalValue(BTC_DENOM, 'TL-BTC', totalValues);
-  const busdValue = setTotalValue(BUSD_DENOM, 'TL-BUSD', totalValues);
-  const xrpValue = setTotalValue(XRP_DENOM, 'TL-XRP', totalValues);
-
+  const totalValues = await getTotalValues(prices, hardAccounts);
+  const bnbValue = await setTotalValue(BNB_DENOM, 'TL-BNB', totalValues);
+  const kavaValue = await setTotalValue(KAVA_DENOM, 'TL-KAVA', totalValues);
+  const usdxValue = await setTotalValue(USDX_DENOM, 'TL-USDX', totalValues);
+  const hardValue = await setTotalValue(HARD_DENOM, 'TL-HARD', totalValues);
+  const btcValue = await setTotalValue(BTC_DENOM, 'TL-BTC', totalValues);
+  const busdValue = await setTotalValue(BUSD_DENOM, 'TL-BUSD', totalValues);
+  const xrpValue = await setTotalValue(XRP_DENOM, 'TL-XRP', totalValues);
 
   const totalValue = bnbValue + kavaValue + usdxValue + hardValue + btcValue + busdValue + xrpValue;
   document.getElementById("TAV").innerHTML = usdFormatter.format(totalValue);
 
-  const balances = await getModuleBalances()
+  const balances = await getModuleBalances(hardAccounts)
   const bnbTotalBalance = getBalanceForDenom('bnb', balances);
 
-  const hardValuesPerSecondByDenom = await getRewardPerYearByDenom();
+  const hardValuesPerSecondByDenom = await getRewardPerYearByDenom(hardParams);
 
   const apyByDenom = setApyByDenom(balances, prices, hardValuesPerSecondByDenom);
   setApyValue('bnb', 'APY-BNB', apyByDenom);
@@ -253,35 +250,35 @@ var updateDisplayValues = async() => {
   setApyValue('btcb', 'APY-BTC', apyByDenom);
   setApyValue('xrpb', 'APY-XRP', apyByDenom);
   setApyValue('busd', 'APY-BUSD', apyByDenom);
+
+  $(".metric-blur").css("background-color", "transparent")
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"})
 }
 
-var getTotalHardClaimed = async () => {
-  let modAccBalances = 0;
-  const baseUrl = "https://kava4.data.kava.io/auth/accounts/";
-  const harvestLPDistModAcc = "kava1nzenvfcapyjr9qe3cr3c5k2aucssg6wnknlvll";
-  const harvestDelegatorDistModAcc = "kava1e3qvdzau5ww0m43d00gqj0ncgy8j03ndge6c2c";
-  const harvestModAccs = [harvestLPDistModAcc, harvestDelegatorDistModAcc]
-  for(modAcc of harvestModAccs) {
-    const response = await fetch(baseUrl + modAcc);
-    const data = await response.json();
-    const result = data && data.result;
-    const hardCoin = result.value.coins.find((item) => item.denom.toUpperCase() === "HARD");
-    modAccBalances += Number(hardCoin.amount);
-  }
+// var getTotalHardClaimed = async () => {
+//   let modAccBalances = 0;
+//   const baseUrl = "https://kava4.data.kava.io/auth/accounts/";
+//   const harvestLPDistModAcc = "kava1nzenvfcapyjr9qe3cr3c5k2aucssg6wnknlvll";
+//   const harvestDelegatorDistModAcc = "kava1e3qvdzau5ww0m43d00gqj0ncgy8j03ndge6c2c";
+//   const harvestModAccs = [harvestLPDistModAcc, harvestDelegatorDistModAcc]
+//   for(modAcc of harvestModAccs) {
+//     const response = await fetch(baseUrl + modAcc);
+//     const data = await response.json();
+//     const result = data && data.result;
+//     const hardCoin = result.value.coins.find((item) => item.denom.toUpperCase() === "HARD");
+//     modAccBalances += Number(hardCoin.amount);
+//   }
 
-  const totalAvailableHard = 120000000; // 120 million
-  const undistributedHard = modAccBalances / 10 ** 6;
-  return totalAvailableHard  - undistributedHard;
-}
+//   const totalAvailableHard = 120000000; // 120 million
+//   const undistributedHard = modAccBalances / 10 ** 6;
+//   return totalAvailableHard  - undistributedHard;
+// }
 
-var getTotalHardAvailable = async () => {
-  const harvestParamsUrl = "https://kava4.data.kava.io/harvest/parameters";
-  const harvestParamsResponse = await fetch(harvestParamsUrl);
-  const harvestData = await harvestParamsResponse.json();
-
+var getTotalHardAvailable = async (hardData) => {
   let totalHardDist = 0;
-  if(harvestData.result) {
-    for(lps of harvestData.result.liquidity_provider_schedules) {
+  if(hardData) {
+    for(lps of hardData.liquidity_provider_schedules) {
       const startTime = Date.parse(lps.start);
       const currentTime = Date.now();
       const msDuration = currentTime - startTime;
@@ -310,12 +307,12 @@ setTimeout(async function(){
   const priceData = await getKavaPrice();
   await getValueRewardsDistributed(Number(priceData.price));
   // const show = 630550.20123;
-  odometer.innerHTML = usdRewardsDistributed;
+  // odometer.innerHTML = usdRewardsDistributed;
 }, 2000);
 
-window.odometerOptions = {
-  auto: false, // Don't automatically initialize everything with class 'odometer'
-  selector: '.my-numbers', // Change the selector used to automatically find things to be animated
-  format: '(,ddd).dd', // Change how digit groups are formatted, and how many digits are shown after the decimal point
-  duration: 3000, // Change how long the javascript expects the CSS animation to take
-};
+// window.odometerOptions = {
+//   auto: false, // Don't automatically initialize everything with class 'odometer'
+//   selector: '.my-numbers', // Change the selector used to automatically find things to be animated
+//   format: '(,ddd).dd', // Change how digit groups are formatted, and how many digits are shown after the decimal point
+//   duration: 3000, // Change how long the javascript expects the CSS animation to take
+// };
