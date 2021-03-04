@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://kava4.data.kava.io";
+const BASE_URL = "https://api.kava.io";
 
 var usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -9,21 +9,26 @@ var isKavaNativeAsset = (denom) => {
 }
 
 var totalLockedAndBorrowedByDenom = (cdpRes, denom) => {
-  var { collateral, principal, accumulated_fees } = cdpRes.reduce(function(accumulator, item) {
-    Object.keys(item.cdp).forEach(function(key) {
-      let c = ['collateral', 'principal', 'accumulated_fees'];
-      if(c.includes(key)){
-        accumulator[key] = Number((accumulator[key] || 0)) + Number(item.cdp[key].amount);
-      }
-    });
-    return accumulator;
-  }, {});
+  let locked = 0;
+  let borrowed = 0;
+  let fees = 0;
+  if (cdpRes) {
+    var { collateral, principal, accumulated_fees } = cdpRes.reduce(function(accumulator, item) {
+      Object.keys(item.cdp).forEach(function(key) {
+        let c = ['collateral', 'principal', 'accumulated_fees'];
+        if(c.includes(key)){
+          accumulator[key] = Number((accumulator[key] || 0)) + Number(item.cdp[key].amount);
+        }
+      });
+      return accumulator;
+    }, {});
 
-  return {
-    locked: isKavaNativeAsset(denom) ? Number(collateral/FACTOR_SIX) : Number(collateral/FACTOR_EIGHT),
-    borrowed: Number(principal/FACTOR_SIX),
-    fees: Number(accumulated_fees/FACTOR_SIX)
+    locked = isKavaNativeAsset(denom) ? Number(collateral/FACTOR_SIX) : Number(collateral/FACTOR_EIGHT),
+    borrowed = Number(principal/FACTOR_SIX),
+    fees = Number(accumulated_fees/FACTOR_SIX)
   }
+
+  return { locked, borrowed, fees }
 };
 
 var totalAmountOnPlatformByDenom = (data, denom) => {
@@ -34,23 +39,19 @@ var totalAmountOnPlatformByDenom = (data, denom) => {
 }
 
 var getRewardApyForDenom = (denom, lockedDenomBalance, kavaPrice, incentiveParamsData) => {
-  const incentiveResult = incentiveParamsData.result;
-  let ukavaRewardsPerPeriod = 0;
-  let nanoSecondsPerPeriod = 0;
-  if(incentiveResult) {
-    if(incentiveResult.rewards && incentiveResult.rewards.length > 0) {
-      const denomRewards = incentiveParamsData.result.rewards.find(
+  const data = incentiveParamsData.result;
+  let ukavaRewardsPerSecond = 0;
+  if(data) {
+    if(data.usdx_minting_reward_periods && data.usdx_minting_reward_periods.length > 0) {
+      const denomRewards = data.usdx_minting_reward_periods.find(
         (item) => item.collateral_type.toUpperCase() === denom.toUpperCase()
       );
-      ukavaRewardsPerPeriod = Number(denomRewards.available_rewards.amount);
-      nanoSecondsPerPeriod = Number(denomRewards.duration);
+      ukavaRewardsPerSecond = Number(denomRewards.rewards_per_second.amount);
     }
   }
 
-  const kavaRewardsPerPeriod = ukavaRewardsPerPeriod/FACTOR_SIX;
-  const periodsPerYear = rewardPeriodsPerYear(nanoSecondsPerPeriod);
-  const rewardsPerYearInKava = kavaRewardsPerPeriod * periodsPerYear;
-  const rewardsPerYearInUsd = rewardsPerYearInKava * Number(kavaPrice);
+  const kavaRewardsPerYear = (ukavaRewardsPerSecond * 31536000 / 10 ** 6)
+  const rewardsPerYearInUsd = kavaRewardsPerYear * Number(kavaPrice);
 
   const rawDenomApy = rewardsPerYearInUsd/lockedDenomBalance;
   const denomPercentageApy = Number(rawDenomApy) * 100;
@@ -128,9 +129,11 @@ var setBep3DenomInfo = async (suppliedAmounts, bep3SupplyData, incentiveParamsDa
   let denomTotalSupplyValue =  Number((denomTotalSupply/FACTOR_EIGHT) * denomPrice)
 
   // set total locked
-  let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === platformDenom).amount
+  let supplyAmount = 0;
+  let denomSupplyFromAcct = suppliedAmounts.find((a) => a.denom === platformDenom)
   if(denomSupplyFromAcct) {
-    setDenomTotalLocked(denomSupplyFromAcct, FACTOR_EIGHT, denomPrice, denomLockedId)
+    supplyAmount = denomSupplyFromAcct.amount;
+    setDenomTotalLocked(supplyAmount, FACTOR_EIGHT, denomPrice, denomLockedId)
   }
 
   // set total borrowed
@@ -148,14 +151,17 @@ var getValueRewardsDistributedForDenom = (rewardPeriodsData, denom, kavaPrice, r
   let kavaDistributed = 0;
 
   if(rewardPeriodsData.result) {
-    const denomRewardPeriod = rewardPeriodsData.result.find(
+    const denomRewardPeriod = rewardPeriodsData.result.usdx_minting_reward_periods.find(
       (item) => item.collateral_type.toUpperCase() === denom.toUpperCase()
     );
 
     const millisecondsRewardActive = Date.now() - rewardsStartTime.getTime();
     const secondsRewardActive = millisecondsRewardActive / 1000;
 
-    const ukavaRewardsPerSecond = denomRewardPeriod.reward.amount;
+    let ukavaRewardsPerSecond = 0;
+    if(denomRewardPeriod) {
+      ukavaRewardsPerSecond = denomRewardPeriod.rewards_per_second.amount;
+    }
     const ukavaDistributed = Number(ukavaRewardsPerSecond) * Number(secondsRewardActive);
     kavaDistributed = ukavaDistributed / FACTOR_SIX;
   }
@@ -191,7 +197,7 @@ var updateDisplayValues = async () => {
     hardPR
   ] = await Promise.all([
     fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT'),
-    fetch(BASE_URL + "/incentive/rewardperiods"),
+    fetch(BASE_URL + "/incentive/parameters"),
     fetch(BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "/bep3/supplies"),
     fetch(BASE_URL + "/bep3/parameters"),
@@ -247,12 +253,12 @@ var updateDisplayValues = async () => {
 
 
   const suppliedAmounts = await supAmtResp.result.value.coins;
-  const btcPlatformAmounts = await totalLockedAndBorrowedByDenom(btcPlatformAmountsJson.result, 'btcb-a')
-  const busdPlatformAmounts = await totalLockedAndBorrowedByDenom(busdPlatformAmountsJson.result, 'busd-a')
-  const xrpPlatformAmounts = await totalLockedAndBorrowedByDenom(xrpPlatformAmountsJson.result, 'xrpb-a')
-  const bnbPlatformAmounts = await totalLockedAndBorrowedByDenom(bnbPlatformAmountsJson.result, 'bnb-a')
-  const ukavaPlatformAmounts = await totalLockedAndBorrowedByDenom(ukavaPlatformAmountsJson.result, 'ukava-a')
-  const hardPlatformAmounts = await totalLockedAndBorrowedByDenom(hardPlatformAmountsJson.result, 'hard-a')
+  const btcPlatformAmounts = totalLockedAndBorrowedByDenom(btcPlatformAmountsJson.result, 'btcb-a')
+  const busdPlatformAmounts = totalLockedAndBorrowedByDenom(busdPlatformAmountsJson.result, 'busd-a')
+  const xrpPlatformAmounts = totalLockedAndBorrowedByDenom(xrpPlatformAmountsJson.result, 'xrpb-a')
+  const bnbPlatformAmounts = totalLockedAndBorrowedByDenom(bnbPlatformAmountsJson.result, 'bnb-a')
+  const ukavaPlatformAmounts = totalLockedAndBorrowedByDenom(ukavaPlatformAmountsJson.result, 'ukava-a')
+  const hardPlatformAmounts = totalLockedAndBorrowedByDenom(hardPlatformAmountsJson.result, 'hard-a')
 
   const btcPF = getCollateralPrice(btcPFJson)
   const busdPF = getCollateralPrice(busdPFJson)
