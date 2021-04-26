@@ -51,11 +51,6 @@ function formatNumbers(input, fixed = 2){
   );
 };
 
-function rewardPeriodsPerYear(rewardsPerSecond) {
-  const secondsPerYear = Number(31536000);
-  return (secondsPerYear * Number(rewardsPerSecond)) / 10 ** 6
-}
-
 var formatPercentage = (value) => {
   return value +"%"
 };
@@ -98,47 +93,43 @@ var getModuleBalances = async (hardAccounts) => {
 };
 
 var getRewardPerYearByDenom = async (hardData) => {
-  const arr = hardData.map((rp) => {
-    let amount = 0;
-    const reward = rp.rewards_per_second.find(a => a.denom === 'hard')
-    if(reward) {
-      amount = reward.amount;
-    }
+  let tokensDistributedBySuppliedAssetPerYear = {};
+   for (const period of hardData) {
+      const coins = {};
+      for (const reward of period.rewards_per_second) {
+        // 31536000 = seconds in a year
+        const coinPerYear = Number(reward.amount) * 31536000 / denomConversions[reward.denom];
 
-    // HARD per year by denom
-    const rewardPerYear = rewardPeriodsPerYear(amount)
-    return { denom: rp.collateral_type, amount: rewardPerYear }
-  })
-  return arr
+        const coinRewardPerYear = { denom: reward.denom, amount: String(coinPerYear) }
+
+        coins[reward.denom] = coinRewardPerYear
+      }
+      tokensDistributedBySuppliedAssetPerYear[period.collateral_type] =  coins;
+    }
+  return tokensDistributedBySuppliedAssetPerYear;
 }
 
 var setApyByDenom = (balances, prices, hardSupplyRewardsPerYearByDenom) => {
+  const apyValues = {};
+  for (const collatDenom in hardSupplyRewardsPerYearByDenom) {
+    const collatDenomPrice = prices[collatDenom].price;
+    const balanceAmount = Number(balances[collatDenom].amount)/denomConversions[collatDenom];
+    const reward = hardSupplyRewardsPerYearByDenom[collatDenom];
 
-  return hardSupplyRewardsPerYearByDenom.map((d) => {
-    const price = prices[d.denom].price;
-    const balanceAmount = Number(balances[d.denom].amount)/denomConversions[d.denom];
+    let numerator = 0;
+    for (const rewardDenom in reward) {
+      const denomPrice = prices[rewardDenom].price;
+      numerator += Number(reward[rewardDenom].amount) * denomPrice;
+    }
 
-    const hardPerYear = hardSupplyRewardsPerYearByDenom.find(h => h.denom === d.denom);
-    const hardPrice = prices['hard'].price;
-
-    const numerator = hardPerYear.amount * hardPrice;
-    const denomentator = balanceAmount * price;
+    const denomentator = balanceAmount * collatDenomPrice;
     const a = formatNumbers((numerator / denomentator) * 100);
     const apy = formatPercentage(formatNumbers((numerator / denomentator) * 100));
 
-    return { denom: d.denom, apy };
-  })
-};
-
-var getKavaPrice = async () => {
-  const priceURL = "https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT";
-  const priceResponse = await fetch(priceURL);
-  const priceData = await priceResponse.json();
-  return {
-    price: priceData.lastPrice,
-    percentChange: priceData.priceChangePercent
+    apyValues[collatDenom] = { apy }
   }
-}
+  return apyValues;
+};
 
 var getTotalValues = (prices, coins) => {
   let totalValues = {};
@@ -161,8 +152,8 @@ var setTotalValue = async (denom, cssId, totalValues) => {
 };
 
 var setApyValue = (denom, cssId, apyByDenom) => {
-  const denomApy = apyByDenom.find(a => a.denom === denom);
-  document.getElementById(cssId).innerHTML = denomApy.apy;
+  const denomApy = apyByDenom[denom] ? apyByDenom[denom].apy : formatPercentage(0);
+  document.getElementById(cssId).innerHTML = denomApy;
 };
 
 var setTotalAssetValue = (totalBalancesUsd) => {
@@ -241,13 +232,12 @@ var updateDisplayValues = async() => {
   await setTotalValue(BUSD_DENOM, 'TB-BUSD', totalBorrowedValues);
 
   const balances = await getModuleBalances(hardAccounts)
-
   const totalBalancesUsd = await getTotalValues(prices, balances);
   setTotalAssetValue(totalBalancesUsd)
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(incentiveParams.hard_supply_reward_periods);
 
-  const supplyApyByDenom = setApyByDenom(balances, prices, hardSupplyRewardsPerYearByDenom);
+  const supplyApyByDenom = setApyByDenom(formatCoins(hardTotalSupplied), prices, hardSupplyRewardsPerYearByDenom);
   setApyValue('bnb', 'APY-BNB', supplyApyByDenom);
   setApyValue('hard', 'APY-HARD', supplyApyByDenom);
   setApyValue('ukava', 'APY-KAVA', supplyApyByDenom);
