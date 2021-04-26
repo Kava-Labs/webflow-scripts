@@ -60,34 +60,32 @@ var formatPercentage = (value) => {
   return value +"%"
 };
 
-var addCoin = (x, y) => {
-  return {
-    denom: x.denom,
-    amount: String(Number(x.amount) + Number(y.amount))
-  }
-}
+var formatPrices = async (pricefeedResult) => {
+  // for now drop any of the usd:30 prices returned
+  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
 
-var convertToCoin = (balance) => {
-  const coinDenom = balance.denom;
-  const coinAmount = Number(balance.amount);
-  let amount;
-  switch(coinDenom) {
-    case 'bnb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'btcb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'xrpb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'busd':
-      amount = coinAmount / (10 ** 8);
-      break;
-    default:
-      amount = coinAmount / (10 ** 6);
+  let prices = {};
+  for (const price of nonThirtyPrices) {
+    const priceName = price.market_id.split(":")[0]
+
+    let name;
+    switch (priceName) {
+      case 'btc':
+        name = 'btcb';
+        break;
+      case 'kava':
+        name = 'ukava';
+        break;
+      case 'xrp':
+        name = 'xrpb';
+        break;
+      default:
+        name = priceName;
+        break;
+    }
+    prices[name] = { price: Number(price.price)}
   }
-  return amount;
+  return prices;
 };
 
 var getModuleBalances = async (hardAccounts) => {
@@ -198,62 +196,29 @@ var getTotalHardAvailable = async (hardData) => {
 
 var updateDisplayValues = async() => {
   const [
-    // pricefeedResponse,
-    hardMarketResponse,
-    kavaMarketResponse,
-    bnbMarketResponse,
-    btcMarketResponse,
-    xrpMarketResponse,
+    pricefeedResponse,
     hardAccountResponse,
     hardTotalSuppliedResponse,
     hardTotalBorrowedResponse,
     incentiveParametersResponse
   ] = await Promise.all([
-    // fetch(`${BASE_URL}/pricefeed/prices`),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=HARDUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=XRPUSDT"),
+    fetch(`${BASE_URL}/pricefeed/prices`),
     fetch(`${BASE_URL}/hard/accounts`),
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(`${BASE_URL}/hard/total-borrowed`),
     fetch(`${BASE_URL}/incentive/parameters`)
   ]);
-  // const pricefeedPrices = await pricefeedResponse.json()
-
-  const hardPriceJson = await hardMarketResponse.json()
-  const kavaPriceJson = await kavaMarketResponse.json()
-  const bnbPriceJson = await bnbMarketResponse.json()
-  const btcPriceJson = await btcMarketResponse.json()
-  const xrpPriceJson = await xrpMarketResponse.json()
+  const pricefeedPrices = await pricefeedResponse.json()
   const hardAccountJson = await hardAccountResponse.json()
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json()
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json()
   const incentiveParamsJson = await incentiveParametersResponse.json()
 
+  const prices = await formatPrices(pricefeedPrices.result);
   const hardAccounts = await hardAccountJson.result;
   const hardTotalSupplied = await hardTotalSuppliedJson.result;
   const hardTotalBorrowed = await hardTotalBorrowedJson.result;
   const incentiveParams = await incentiveParamsJson.result;
-
-  const hardPrice = await hardPriceJson.lastPrice
-  const kavaPrice = await kavaPriceJson.lastPrice
-  const bnbPrice = await bnbPriceJson.lastPrice
-  const btcPrice = await btcPriceJson.lastPrice
-  const busdPrice = 1;
-  const xrpPrice = await xrpPriceJson.lastPrice
-  const usdxPrice = 1;
-
-  const prices = {
-    hard: { price: Number(hardPrice) },
-    ukava: { price: Number(kavaPrice) },
-    bnb: { price: Number(bnbPrice) },
-    btcb: { price: Number(btcPrice) },
-    busd: { price: Number(busdPrice) },
-    xrpb: { price: Number(xrpPrice) },
-    usdx: { price: Number(usdxPrice) }
-  }
 
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
   const rawTotalHardBorrowDist = await getTotalHardAvailable(incentiveParams.hard_borrow_reward_periods);
