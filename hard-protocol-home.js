@@ -15,6 +15,28 @@ const BTC_DENOM = 'btcb';
 const XRP_DENOM = 'xrpb';
 const BUSD_DENOM = 'busd';
 
+const denomConversions = {
+  usdx: FACTOR_SIX,
+  ukava: FACTOR_SIX,
+  hard: FACTOR_SIX,
+  bnb: FACTOR_EIGHT,
+  btcb: FACTOR_EIGHT,
+  xrpb: FACTOR_EIGHT,
+  busd: FACTOR_EIGHT
+};
+
+function isEmpty(obj) {
+  return obj && Object.keys(obj).length === 0 && obj.constructor === Object
+}
+
+function formatCoins(coins) {
+  let formattedCoins = {};
+  for (const coin of coins) {
+    formattedCoins[coin.denom] = { denom: coin.denom, amount: coin.amount }
+  }
+  return formattedCoins
+}
+
 function formatNumbers(input, fixed = 2){
   return (Number(input).toFixed(fixed).toString()).replace(
     /^([-+]?)(0?)(\d+)(.?)(\d+)$/g, function(match, sign, zeros, before, decimal, after) {
@@ -29,219 +51,193 @@ function formatNumbers(input, fixed = 2){
   );
 };
 
-var getBalanceForDenom = (denom, balances) => {
-  const balance =  balances.find(b => b.denom === denom);
-  return balance ? Number(balance.amount) : 0.00
-};
-
-function rewardPeriodsPerYear(rewardsPerSecond) {
-  const secondsPerYear = Number(31536000);
-  return (secondsPerYear * Number(rewardsPerSecond)) / 10 ** 6
-}
-
 var formatPercentage = (value) => {
   return value +"%"
 };
 
-var convertToCoin = (balance) => {
-  const coinDenom = balance.denom;
-  const coinAmount = Number(balance.amount);
-  let amount;
-  switch(coinDenom) {
-    case 'bnb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'btcb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'xrpb':
-      amount = coinAmount / (10 ** 8);
-      break;
-    case 'busd':
-      amount = coinAmount / (10 ** 8);
-      break;
-    default:
-      amount = coinAmount / (10 ** 6);
+var formatPrices = async (pricefeedResult) => {
+  // for now drop any of the usd:30 prices returned
+  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
+
+  let prices = {};
+  for (const price of nonThirtyPrices) {
+    const priceName = price.market_id.split(":")[0]
+
+    let name;
+    switch (priceName) {
+      case 'btc':
+        name = 'btcb';
+        break;
+      case 'kava':
+        name = 'ukava';
+        break;
+      case 'xrp':
+        name = 'xrpb';
+        break;
+      default:
+        name = priceName;
+        break;
+    }
+    prices[name] = { price: Number(price.price)}
   }
-  return amount;
+  return prices;
 };
 
 var getModuleBalances = async (hardAccounts) => {
-  return hardAccounts.find(a => a.value.name === 'hard').value.coins;
+  const hardAccountCoins = hardAccounts.find(a => a.value.name === 'hard').value.coins;
+  const coins = {};
+  for (const coin of hardAccountCoins) {
+    coins[coin.denom] = { denom: coin.denom, amount: coin.amount }
+  }
+  return coins;
 };
 
 var getRewardPerYearByDenom = async (hardData) => {
-  const arr = hardData.map((rp) => {
-    let amount = 0;
-    const reward = rp.rewards_per_second.find(a => a.denom === 'hard')
-    if(reward) {
-      amount = reward.amount;
-    }
+  let tokensDistributedBySuppliedAssetPerYear = {};
+   for (const period of hardData) {
+      const coins = {};
+      for (const reward of period.rewards_per_second) {
+        // 31536000 = seconds in a year
+        const coinPerYear = Number(reward.amount) * 31536000 / denomConversions[reward.denom];
 
-    // HARD per year by denom
-    const rewardPerYear = rewardPeriodsPerYear(amount)
-    return { denom: rp.collateral_type, amount: rewardPerYear }
-  })
-  return arr
+        const coinRewardPerYear = { denom: reward.denom, amount: String(coinPerYear) }
+
+        coins[reward.denom] = coinRewardPerYear
+      }
+      tokensDistributedBySuppliedAssetPerYear[period.collateral_type] =  coins;
+    }
+  return tokensDistributedBySuppliedAssetPerYear;
 }
 
 var setApyByDenom = (balances, prices, hardSupplyRewardsPerYearByDenom) => {
-  return hardSupplyRewardsPerYearByDenom.map((d) => {
-    const price = prices.find(p => p.name === d.denom);
+  const apyValues = {};
+  for (const collatDenom in hardSupplyRewardsPerYearByDenom) {
+    const collatDenomPrice = prices[collatDenom].price;
+    const balanceAmount = Number(balances[collatDenom].amount)/denomConversions[collatDenom];
+    const reward = hardSupplyRewardsPerYearByDenom[collatDenom];
 
-    const balance = balances.find(b => b.denom === d.denom);
-    const balanceAmount = convertToCoin(balance);
+    let numerator = 0;
+    for (const rewardDenom in reward) {
+      const denomPrice = prices[rewardDenom].price;
+      numerator += Number(reward[rewardDenom].amount) * denomPrice;
+    }
 
-    const hardPerYear = hardSupplyRewardsPerYearByDenom.find(h => h.denom === d.denom);
-    const hardPrice = prices.find(p => p.name === 'hard').price;
-
-    const numerator = hardPerYear.amount * hardPrice;
-    const denomentator = balanceAmount * price.price;
+    const denomentator = balanceAmount * collatDenomPrice;
     const a = formatNumbers((numerator / denomentator) * 100);
     const apy = formatPercentage(formatNumbers((numerator / denomentator) * 100));
 
-    return { denom: d.denom, apy };
-  })
+    apyValues[collatDenom] = { apy }
+  }
+  return apyValues;
 };
 
-var getKavaPrice = async () => {
-  const priceURL = "https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT";
-  const priceResponse = await fetch(priceURL);
-  const priceData = await priceResponse.json();
-  return {
-    price: priceData.lastPrice,
-    percentChange: priceData.priceChangePercent
-  }
-}
+var getTotalValues = (prices, coins) => {
+  let totalValues = {};
 
-var getTotalValues = async (prices, coins) => {
-  var conversionMap = new Map();
-  conversionMap.set(USDX_DENOM, 10 ** 6);
-  conversionMap.set(KAVA_DENOM, 10 ** 6);
-  conversionMap.set(HARD_DENOM, 10 ** 6);
-  conversionMap.set(BNB_DENOM, 10 ** 8);
-  conversionMap.set(BTC_DENOM, 10 ** 8);
-  conversionMap.set(XRP_DENOM, 10 ** 8);
-  conversionMap.set(BUSD_DENOM, 10 ** 8);
-
-  var totalValues = [];
-  if(coins && coins.length > 0) {
-    for(coin of coins) {
-      const supply = Number(coin.amount)/conversionMap.get(coin.denom);
-      const price = prices.find((item) => item.name === coin.denom).price;
-      const value = supply * Number(price);
-      totalValues.push({denom: coin.denom, totalValue: value});
+  if(!isEmpty(coins)) {
+    for(const coin in coins) {
+      const supply = Number(coins[coin].amount)/denomConversions[coin];
+      const price = prices[coin].price;
+      totalValues[coin] = {denom: coin, amount: supply * Number(price) }
     }
   }
-  return totalValues
+  return totalValues;
 }
 
 var setTotalValue = async (denom, cssId, totalValues) => {
-  let denomValue = 0;
-
-  const denomData = totalValues.find((item) => item.denom === denom);
-  if (denomData) {
-    denomValue = denomData.totalValue;
-  }
+  const denomValue = totalValues[denom] ? totalValues[denom].amount : 0;
   document.getElementById(cssId).innerHTML = usdFormatter.format(denomValue);
 
-  return denomValue
+  return denomValue;
 };
 
 var setApyValue = (denom, cssId, apyByDenom) => {
-  const denomApy = apyByDenom.find(a => a.denom === denom);
-  document.getElementById(cssId).innerHTML = denomApy.apy;
+  const denomApy = apyByDenom[denom] ? apyByDenom[denom].apy : formatPercentage(0);
+  document.getElementById(cssId).innerHTML = denomApy;
 };
+
+var setTotalAssetValue = (totalBalancesUsd) => {
+  let totalAssetValue = 0;
+  for (const coin in totalBalancesUsd) {
+    totalAssetValue += Number(totalBalancesUsd[coin].amount)
+  }
+  document.getElementById("TAV").innerHTML = usdFormatter.format(totalAssetValue);
+}
+
+var getTotalHardAvailable = async (hardData) => {
+  let totalHardDist = 0;
+  if(hardData) {
+    for(const rp of hardData) {
+      const startTime = Date.parse(rp.start);
+      const currentTime = Date.now();
+      const msDuration = currentTime - startTime;
+      const secDuration = msDuration/1000;
+      const hardReward = rp.rewards_per_second.find(d => d.denom === 'hard')
+
+      let rewardsDistToDate = 0;
+      if(hardReward) {
+        rewardsDistToDate = secDuration * Number(hardReward.amount);
+      }
+
+      totalHardDist += rewardsDistToDate;
+    }
+  }
+  return totalHardDist / denomConversions['hard'];
+}
 
 var updateDisplayValues = async() => {
   const [
-    hardMarketResponse,
-    kavaMarketResponse,
-    bnbMarketResponse,
-    btcMarketResponse,
-    xrpMarketResponse,
+    pricefeedResponse,
     hardAccountResponse,
     hardTotalSuppliedResponse,
     hardTotalBorrowedResponse,
     incentiveParametersResponse
   ] = await Promise.all([
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=HARDUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=KAVAUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
-    fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=XRPUSDT"),
+    fetch(`${BASE_URL}/pricefeed/prices`),
     fetch(`${BASE_URL}/hard/accounts`),
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(`${BASE_URL}/hard/total-borrowed`),
     fetch(`${BASE_URL}/incentive/parameters`)
   ]);
-
-  const hardPriceJson = await hardMarketResponse.json()
-  const kavaPriceJson = await kavaMarketResponse.json()
-  const bnbPriceJson = await bnbMarketResponse.json()
-  const btcPriceJson = await btcMarketResponse.json()
-  const xrpPriceJson = await xrpMarketResponse.json()
+  const pricefeedPrices = await pricefeedResponse.json()
   const hardAccountJson = await hardAccountResponse.json()
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json()
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json()
   const incentiveParamsJson = await incentiveParametersResponse.json()
 
+  const prices = await formatPrices(pricefeedPrices.result);
   const hardAccounts = await hardAccountJson.result;
   const hardTotalSupplied = await hardTotalSuppliedJson.result;
   const hardTotalBorrowed = await hardTotalBorrowedJson.result;
   const incentiveParams = await incentiveParamsJson.result;
 
-  const hardPrice = await hardPriceJson.lastPrice
-  const kavaPrice = await kavaPriceJson.lastPrice
-  const bnbPrice = await bnbPriceJson.lastPrice
-  const btcPrice = await btcPriceJson.lastPrice
-  const busdPrice = 1;
-  const xrpPrice = await xrpPriceJson.lastPrice
-  const usdxPrice = 1;
-
-  const prices = [
-    { name: HARD_DENOM, price: hardPrice },
-    { name: KAVA_DENOM, price: kavaPrice },
-    { name: BNB_DENOM, price: bnbPrice },
-    { name: BTC_DENOM, price: btcPrice },
-    { name: BUSD_DENOM, price: busdPrice },
-    { name: XRP_DENOM, price: xrpPrice },
-    { name: USDX_DENOM, price: usdxPrice }
-  ]
-
-  const hardTokenPrice = prices.find(p => p.name === 'hard').price;
-
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
   const rawTotalHardBorrowDist = await getTotalHardAvailable(incentiveParams.hard_borrow_reward_periods);
   const rawTotalHardDist = rawTotalHardSupplyDist + rawTotalHardBorrowDist;
 
-  const displayTotalHardDist = usdFormatter.format(rawTotalHardDist * hardTokenPrice);
+  const displayTotalHardDist = usdFormatter.format(rawTotalHardDist * prices['hard'].price);
   const totalHardDistUSDValue = displayTotalHardDist.slice(0, displayTotalHardDist.length);
   document.getElementById("total-hard-dist").innerHTML = totalHardDistUSDValue;
 
-  const totalSuppliedValues = await getTotalValues(prices, hardTotalSupplied);
-  const bnbSuppliedValue = await setTotalValue(BNB_DENOM, 'TL-BNB', totalSuppliedValues);
-  const kavaSuppliedValue = await setTotalValue(KAVA_DENOM, 'TL-KAVA', totalSuppliedValues);
-  const usdxSuppliedValue = await setTotalValue(USDX_DENOM, 'TL-USDX', totalSuppliedValues);
-  const hardSuppliedValue = await setTotalValue(HARD_DENOM, 'TL-HARD', totalSuppliedValues);
-  const btcSuppliedValue = await setTotalValue(BTC_DENOM, 'TL-BTC', totalSuppliedValues);
-  const busdVSuppliedalue = await setTotalValue(BUSD_DENOM, 'TL-BUSD', totalSuppliedValues);
-  const xrpSuppliedValue = await setTotalValue(XRP_DENOM, 'TL-XRP', totalSuppliedValues);
+  const totalSuppliedValues = await getTotalValues(prices, formatCoins(hardTotalSupplied));
+  await setTotalValue(BNB_DENOM, 'TL-BNB', totalSuppliedValues);
+  await setTotalValue(KAVA_DENOM, 'TL-KAVA', totalSuppliedValues);
+  await setTotalValue(USDX_DENOM, 'TL-USDX', totalSuppliedValues);
+  await setTotalValue(HARD_DENOM, 'TL-HARD', totalSuppliedValues);
+  await setTotalValue(BTC_DENOM, 'TL-BTC', totalSuppliedValues);
+  await setTotalValue(BUSD_DENOM, 'TL-BUSD', totalSuppliedValues);
+  await setTotalValue(XRP_DENOM, 'TL-XRP', totalSuppliedValues);
 
-  const totalBorrowedValues = await getTotalValues(prices, hardTotalBorrowed);
-  const busdBorrowedValue = await setTotalValue(BUSD_DENOM, 'TB-BUSD', totalBorrowedValues);
+  const totalBorrowedValues = await getTotalValues(prices, formatCoins(hardTotalBorrowed));
+  await setTotalValue(BUSD_DENOM, 'TB-BUSD', totalBorrowedValues);
 
   const balances = await getModuleBalances(hardAccounts)
-
   const totalBalancesUsd = await getTotalValues(prices, balances);
-  const totalAssetValue = totalBalancesUsd.reduce((acc, val) => acc + val.totalValue, 0)
-  document.getElementById("TAV").innerHTML = usdFormatter.format(totalAssetValue);
+  setTotalAssetValue(totalBalancesUsd)
 
-
-  const bnbTotalBalance = getBalanceForDenom('bnb', balances);
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(incentiveParams.hard_supply_reward_periods);
 
-  const supplyApyByDenom = setApyByDenom(balances, prices, hardSupplyRewardsPerYearByDenom);
+  const supplyApyByDenom = setApyByDenom(formatCoins(hardTotalSupplied), prices, hardSupplyRewardsPerYearByDenom);
   setApyValue('bnb', 'APY-BNB', supplyApyByDenom);
   setApyValue('hard', 'APY-HARD', supplyApyByDenom);
   setApyValue('ukava', 'APY-KAVA', supplyApyByDenom);
@@ -253,26 +249,6 @@ var updateDisplayValues = async() => {
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
   $(".api-metric").css({"display": "block", "text-align": "center"})
-}
-
-var getTotalHardAvailable = async (hardData) => {
-  let totalHardDist = 0;
-  if(hardData) {
-    for(rp of hardData) {
-      const startTime = Date.parse(rp.start);
-      const currentTime = Date.now();
-      const msDuration = currentTime - startTime;
-      const secDuration = msDuration/1000;
-      const hardReward = rp.rewards_per_second.find(d => d.denom === 'hard')
-      let rewardsDistToDate = 0;
-      if(hardReward) {
-        rewardsDistToDate = secDuration * Number(hardReward.amount);
-      }
-
-      totalHardDist += rewardsDistToDate;
-    }
-  }
-  return totalHardDist / 10 ** 6;
 }
 
 var main = async () => {
