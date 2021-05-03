@@ -3,34 +3,29 @@ const TO_8 = Number(10 ** 8)
 const BASE_URL = "https://api.kava.io/";
 const BINANACE_URL = "https://api.binance.com/api/v3/"
 
-// usdFormatter
-var usdF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+var usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
-// formatMoneyMillions
-var formatMM = (v) => {
+var formatMoneyMillions = (v) => {
   const valueBorrowedInMil = v/TO_6
-  const valueBorrowedFormatted = usdF.format(valueBorrowedInMil)
+  const valueBorrowedFormatted = usdFormatter.format(valueBorrowedInMil)
   return valueBorrowedFormatted + "M"
 }
 
-// formatMoneyNoDecimalsOrLabels
-var fMNDOL = (v) => {
-  const fm = usdF.format(v)
+var formatMoneyNoDecimalsOrLabels = (v) => {
+  const fm = usdFormatter.format(v)
   return fm.slice(1, fm.length-3)
 }
 
-// formatMoneyNoDollarSign
-var formatMNDS = (v) => {
-  const fm = usdF.format(v)
+var formatMoneyNoDollarSign = (v) => {
+  const fm = usdFormatter.format(v)
   return fm.slice(1, fm.length)
 }
 
-// isKavaNativeAsset
-var isKNA = (d) => {
+var isKavaNativeAsset = (d) => {
   return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(d)
 }
 
-var dLab = (v) => {
+var denomLabel = (v) => {
   switch(v) {
     case 'xrpb':
       return 'XRP'
@@ -43,9 +38,7 @@ var dLab = (v) => {
   }
 }
 
-// totalLockedAndBorrowedByDenom
-var tLABBD = async (cdpRes, denom) => {
-
+var totalLockedAndBorrowedByDenom = async (cdpRes, denom) => {
   let locked = 0;
   let borrowed = 0;
   let fees = 0;
@@ -60,7 +53,7 @@ var tLABBD = async (cdpRes, denom) => {
       return accumulator;
     }, {});
 
-    locked = isKNA(denom) ? Number(collateral/TO_6) : Number(collateral/TO_8),
+    locked = isKavaNativeAsset(denom) ? Number(collateral/TO_6) : Number(collateral/TO_8),
     borrowed = Number(principal/TO_6),
     fees = Number(accumulated_fees/TO_6)
   }
@@ -68,20 +61,17 @@ var tLABBD = async (cdpRes, denom) => {
   return { locked, borrowed, fees }
 };
 
-// bnbAmountOnPlatform
-var bAOP = (data) => {
+var bnbAmountOnPlatform = (data) => {
   const denomData = data.result.find((d) => d.current_supply.denom === 'bnb')
   return Number(denomData.current_supply.amount)
 }
 
-// totalAmountOnPlatformByDenom
-var tAOPBD = (data, denom) => {
+var totalAmountOnPlatformByDenom = (data, denom) => {
   const denomData = data.result.find((d) => d.denom === denom)
   return Number(denomData.amount)
 }
 
-// getRewardApyForDenom
-var getRAFD = (denom, lockedDenomBalance, kavaPrice, data) => {
+var getRewardApyForDenom = (denom, lockedDenomBalance, kavaPrice, data) => {
   const iRdata = data.result.usdx_minting_reward_periods;
   let ukavaRewardsPerSecond = 0;
   if(iRdata) {
@@ -104,14 +94,13 @@ var getRAFD = (denom, lockedDenomBalance, kavaPrice, data) => {
   }
 
   const denomPercentageApy = Number(rawDenomApy) * 100;
-  const formattedPercentageWithDollarSign = usdF.format(denomPercentageApy);
+  const formattedPercentageWithDollarSign = usdFormatter.format(denomPercentageApy);
   const formattedPercentageFinal = formattedPercentageWithDollarSign.slice(1, formattedPercentageWithDollarSign.length);
   return formattedPercentageFinal + "%";
 };
 
 
-// usdxDebtLimitByDenom
-var uDLBD = (denom, data) => {
+var usdxDebtLimitByDenom = (denom, data) => {
   const collateralParams = data.result.collateral_params;
 
   const denomParams = collateralParams.find(
@@ -122,16 +111,14 @@ var uDLBD = (denom, data) => {
   return hasDebtLimit ? (Number(denomParams.debt_limit.amount)/TO_6) : 0
 };
 
-// setUsdxAmount
-var sUA = (limit, borrowed, feesOwed) => {
+var setUsdxAmount = (limit, borrowed, feesOwed) => {
   if(limit && typeof borrowed !== 'undefined') {
     const usdxBorrowedAndFees = borrowed + feesOwed;
     return usdxBorrowedAndFees > limit ? Number(limit) : Number(usdxBorrowedAndFees);
   }
 }
 
-// supplyLimitByDenom
-var supplyLBD = (denom, bep3ParamsData) => {
+var supplyLimitByDenom = (denom, bep3ParamsData) => {
   const assetParams = bep3ParamsData.result.asset_params;
 
   const denomParams = assetParams.find(
@@ -142,43 +129,39 @@ var supplyLBD = (denom, bep3ParamsData) => {
   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/TO_8) : 0
 };
 
-// setDenomTotalSupplied
-var sDTS = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
+var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
   const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
-  sDV(formatMNDS(denomTotalSupplyValue), denomLockedId);
+  setDisplayValue(formatMoneyNoDollarSign(denomTotalSupplyValue), denomLockedId);
   return denomTotalSupplyValue
 }
 
-// setDenomAPY
-var sDAPY = (denomPrice, denomLockedValue, incentiveDenom, kavaPrice, iPData, denomApyId) => {
+var setDenomAPY = (denomPrice, denomLockedValue, incentiveDenom, kavaPrice, iPData, denomApyId) => {
   const denomValueLocked = Number(denomPrice) * Number(denomLockedValue)
-  const denomRewardAPY = getRAFD(incentiveDenom, denomValueLocked, kavaPrice, iPData)
-  sDV(denomRewardAPY, denomApyId);
+  const denomRewardAPY = getRewardApyForDenom(incentiveDenom, denomValueLocked, kavaPrice, iPData)
+  setDisplayValue(denomRewardAPY, denomApyId);
 }
 
-  // setDenomTotalSupplyValue
-var sDTSV = async (supplyData, bep3ParamsData, denomPrice, platformDenom) => {
+var setDenomTotalSupplyValue = async (supplyData, bep3ParamsData, denomPrice, platformDenom) => {
   let denomTotalSupply;
   platformDenom === 'bnb' ?
-    denomTotalSupply = bAOP(supplyData) :
-    denomTotalSupply = tAOPBD(supplyData, platformDenom)
+    denomTotalSupply = bnbAmountOnPlatform(supplyData) :
+    denomTotalSupply = totalAmountOnPlatformByDenom(supplyData, platformDenom)
   let denomTotalSupplyConverted
-  isKNA(platformDenom) ?
+  isKavaNativeAsset(platformDenom) ?
     denomTotalSupplyConverted = Number(denomTotalSupply)/TO_6 :
     denomTotalSupplyConverted = Number(denomTotalSupply)/TO_8
   let denomTotalSupplyValue =  Number(denomTotalSupplyConverted * denomPrice)
-  let denomAssetLimit = supplyLBD(platformDenom, bep3ParamsData)
+  let denomAssetLimit = supplyLimitByDenom(platformDenom, bep3ParamsData)
   let data = {}
   data[`${platformDenom}Usd`] = denomTotalSupplyValue
-  data[`${platformDenom}MC`] = formatMM(denomTotalSupplyValue)
-  data[`${platformDenom}Supply`] = fMNDOL(denomTotalSupplyConverted) + ' ' + dLab(platformDenom)
-  data[`${platformDenom}AL`] = fMNDOL(denomAssetLimit) + ' ' + dLab(platformDenom)
+  data[`${platformDenom}MarketCap`] = formatMoneyMillions(denomTotalSupplyValue)
+  data[`${platformDenom}Supply`] = formatMoneyNoDecimalsOrLabels(denomTotalSupplyConverted) + ' ' + denomLabel(platformDenom)
+  data[`${platformDenom}AssetLimit`] = formatMoneyNoDecimalsOrLabels(denomAssetLimit) + ' ' + denomLabel(platformDenom)
   return data;
 };
 
-// getValueRewardsDistributedForDenom
-var getVRDFD = (rewardPeriodsData, denom, kavaPrice) => {
+var getValueRewardsDistributedForDenom = (rewardPeriodsData, denom, kavaPrice) => {
   let data = rewardPeriodsData.result
 
   let ukavaRewardsPerSecond = 0;
@@ -203,32 +186,29 @@ var getVRDFD = (rewardPeriodsData, denom, kavaPrice) => {
 };
 
 // asset 'Total Borrowed', 'Borrow Limit', 'percent line'
-// setUsdxAmountsByDenom
-var sUABD = (denom, usdxAmount, usdxLimit) => {
-  const formattedUsdxAmount = fMNDOL(usdxAmount);
-  const formattedUsdxLimit = fMNDOL(usdxLimit);
+var setUsdxAmountsByDenom = (denom, usdxAmount, usdxLimit) => {
+  const formattedUsdxAmount = formatMoneyNoDecimalsOrLabels(usdxAmount);
+  const formattedUsdxLimit = formatMoneyNoDecimalsOrLabels(usdxLimit);
   const rawUsdxUtilization = Number(usdxAmount.toFixed(0)) / Number(usdxLimit.toFixed(0))
   const percentUsdxUtilization = Number(rawUsdxUtilization.toFixed(3) * 100).toFixed(2) + "%";
   $(`.percent-line-usdx-${denom}`).css("width", percentUsdxUtilization);
-  sDV(formattedUsdxAmount, `tb-${denom}`)
-  sDV(formattedUsdxLimit, `bl-${denom}`)
+  setDisplayValue(formattedUsdxAmount, `tb-${denom}`)
+  setDisplayValue(formattedUsdxLimit, `bl-${denom}`)
 };
 
-// setDenomPriceData
-var sDPD = (denomPercentChange, priceChangeCssId) => {
+var setDenomPriceData = (denomPercentChange, priceChangeCssId) => {
   let kavaPercentChangeFinal;
   if(Number(denomPercentChange) >= 0) {
-    kavaPercentChangeFinal =  "+" + formatMNDS(denomPercentChange) + "%";
-    sDC('green', priceChangeCssId)
+    kavaPercentChangeFinal =  "+" + formatMoneyNoDollarSign(denomPercentChange) + "%";
+    setDisplayColor('green', priceChangeCssId)
   } else {
-    kavaPercentChangeFinal = usdF.format(denomPercentChange).replace("$", "") + "%";
-    sDC('red', priceChangeCssId)
+    kavaPercentChangeFinal = usdFormatter.format(denomPercentChange).replace("$", "") + "%";
+    setDisplayColor('red', priceChangeCssId)
   }
-  sDV(kavaPercentChangeFinal, priceChangeCssId)
+  setDisplayValue(kavaPercentChangeFinal, priceChangeCssId)
 }
 
-// getSuppliedAmount
-var gSA = (suppliedAmounts, denom) => {
+var getSuppliedAmount = (suppliedAmounts, denom) => {
   let amount = 0;
   const denomAmounts = suppliedAmounts.find((a) => a.denom === denom)
   if (denomAmounts) {
@@ -237,48 +217,44 @@ var gSA = (suppliedAmounts, denom) => {
   return amount
 }
 
-// setUsdxAssetLimit
-var sUAL = (cdpParamsData) => {
-  return fMNDOL(Number(cdpParamsData.result.global_debt_limit.amount)/TO_6);
+var setUsdxAssetLimit = (cdpParamsData) => {
+  return formatMoneyNoDecimalsOrLabels(Number(cdpParamsData.result.global_debt_limit.amount)/TO_6);
 }
 
-// setDisplayValue
-var sDV = (value, cssId) => {
+var setDisplayValue = (value, cssId) => {
   // $(`#${cssId}`).html(value);
   $(`#${cssId}`).last().html(value);
   $(`#${cssId}`).first().html(value);
   // document.getElementById(cssId).innerHTML = value;
 };
 
-// setDisplayColor
-var sDC = (color, cssId) =>{
+var setDisplayColor = (color, cssId) =>{
   $(`#${cssId}`).css({ color: color });
   // document.getElementById(cssId).style.color = color;
 }
 
-// updateDisplayValues
-var updateDV = async () => {
+var updateDisplayValues = async () => {
   // set price info for denoms
   const [
-    kavaMR,
-    hardMR,
-    bnbMR,
-    busdMR,
-    btcbMR,
-    xrpbMR,
-    usdxMR,
-    saData,
-    sData,
-    bnbSDdata,
-    bep3Data,
-    cdpD,
-    ipD,
-    cdpRBnb,
-    cdpRBusd,
-    cdpRBtc,
-    cdpRXrp,
-    cdpRKava,
-    cdpRHard,
+    kavaMarketResponse,
+    hardMarketResponse,
+    bnbMarketResponse,
+    busdMarketResponse,
+    btcbMarketResponse,
+    xrpbMarketResponse,
+    usdxMarketResponse,
+    supplyAccountResponse,
+    supplyTotalResponse,
+    bep3SupplyResponse,
+    bep3ParamsResponse,
+    cdpParamsResponse,
+    incentiveParamsResponse,
+    cdpResponseDataBnb,
+    cdpResponseDataBusd,
+    cdpResponseDataBtc,
+    cdpResponseDataXrp,
+    cdpResponseDataKava,
+    cdpResponseDataHard,
   ] = await Promise.all([
     fetch(BINANACE_URL + "ticker/24hr?symbol=KAVAUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=HARDUSDT"),
@@ -301,18 +277,18 @@ var updateDV = async () => {
     fetch(BASE_URL + 'cdp/cdps/collateralType/hard-a')
   ]);
 
-  const kavaMD = await kavaMR.json();
-  const hardMD = await hardMR.json();
-  const bnbMD = await bnbMR.json();
-  const busdMD = await busdMR.json();
-  const btcbMD = await btcbMR.json();
-  const xrpbMD = await xrpbMR.json();
-  const usdxMD = await usdxMR.json();
+  const kavaMarketData = await kavaMarketResponse.json();
+  const hardMarketData = await hardMarketResponse.json();
+  const bnbMarketData = await bnbMarketResponse.json();
+  const busdMarketData = await busdMarketResponse.json();
+  const btcbMarketData = await btcbMarketResponse.json();
+  const xrpbMarketData = await xrpbMarketResponse.json();
+  const usdxMarketData = await usdxMarketResponse.json();
 
-  const kavaPrice = Number(kavaMD.lastPrice);
+  const kavaPrice = Number(kavaMarketData.lastPrice);
 
   // "Total Rewards Distributed"
-  const iPData = await ipD.json()
+  const incentiveParamsData = await incentiveParamsResponse.json()
 //  bnb = new Date("2020-07-29T14:00:14.333506701Z");
 // busd = new Date("2020-11-09T14:00:14.333506701Z");
 // btcb = new Date("2020-11-16T14:00:14.333506701Z");
@@ -320,30 +296,30 @@ var updateDV = async () => {
 // kava = new Date("2020-12-14T14:00:14.333506701Z");
 // hard = new Date("2021-01-15T14:00:14.333506701Z");
 
-  const bnbReward = getVRDFD(iPData, 'bnb-a', kavaPrice);
-  const busdReward = getVRDFD(iPData, 'busd-a', kavaPrice);
-  const btcbReward = getVRDFD(iPData, 'btcb-a', kavaPrice);
-  const xrpbReward = getVRDFD(iPData, 'xrpb-a', kavaPrice);
-  const kavaReward = getVRDFD(iPData, 'ukava-a', kavaPrice);
-  const hardReward = getVRDFD(iPData, 'hard-a', kavaPrice);
+  const bnbReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'bnb-a', kavaPrice);
+  const busdReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'busd-a', kavaPrice);
+  const btcbReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'btcb-a', kavaPrice);
+  const xrpbReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'xrpb-a', kavaPrice);
+  const kavaReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'ukava-a', kavaPrice);
+  const hardReward = getValueRewardsDistributedForDenom(incentiveParamsData, 'hard-a', kavaPrice);
 
-  const suppliedAmountJson = await saData.json()
+  const suppliedAmountJson = await supplyAccountResponse.json()
   const suppliedAmounts = suppliedAmountJson.result.value.coins
-  const supplyData = await sData.json()
-  const bnbSupplyData = await bnbSDdata.json()
-  const bep3ParamsData = await bep3Data.json()
-  const cdpParamsData = await cdpD.json()
+  const supplyData = await supplyTotalResponse.json()
+  const bnbSupplyData = await bep3SupplyResponse.json()
+  const bep3ParamsData = await bep3ParamsResponse.json()
+  const cdpParamsData = await cdpParamsResponse.json()
 
-  const bnbCdPData = await cdpRBnb.json()
-  const busdCdPData = await cdpRBusd.json()
-  const btcCdPData = await cdpRBtc.json()
-  const xrpCdPData = await cdpRXrp.json()
-  const kavaCdPData = await cdpRKava.json()
-  const hardCdPData = await cdpRHard.json()
+  const bnbCdPData = await cdpResponseDataBnb.json()
+  const busdCdPData = await cdpResponseDataBusd.json()
+  const btcCdPData = await cdpResponseDataBtc.json()
+  const xrpCdPData = await cdpResponseDataXrp.json()
+  const kavaCdPData = await cdpResponseDataKava.json()
+  const hardCdPData = await cdpResponseDataHard.json()
 
 
   // new bnb
-  let bnbPlatformAmounts = await tLABBD(bnbCdPData.result, 'bnb-a');
+  let bnbPlatformAmounts = await totalLockedAndBorrowedByDenom(bnbCdPData.result, 'bnb-a');
   let bnbLocked;
   let bnbBorrowed;
   let bnbFees;
@@ -352,35 +328,33 @@ var updateDV = async () => {
     bnbBorrowed = bnbPlatformAmounts.borrowed;
     bnbFees = bnbPlatformAmounts.fees;
   }
-  let bnbUsdxLimit = await uDLBD('BNB-A', cdpParamsData)
-  let bnbUSDX = sUA(bnbUsdxLimit, bnbBorrowed, bnbFees)
-  let bnbPrice = Number(bnbMD.lastPrice);
-  const bnbPCP = Number(bnbMD.priceChangePercent);
+  let bnbUsdxLimit = await usdxDebtLimitByDenom('BNB-A', cdpParamsData)
+  let bnbUSDX = setUsdxAmount(bnbUsdxLimit, bnbBorrowed, bnbFees)
+  let bnbPrice = Number(bnbMarketData.lastPrice);
+  const bnbPriceChangePercent = Number(bnbMarketData.priceChangePercent);
   let {
     bnbUsd,
-    bnbMC,
+    bnbMarketCap,
     bnbSupply,
-    bnbAL
-  } = await sDTSV(bnbSupplyData, bep3ParamsData, bnbPrice, 'bnb');
+    bnbAssetLimit
+  } = await setDenomTotalSupplyValue(bnbSupplyData, bep3ParamsData, bnbPrice, 'bnb');
 
   // set bnb info in UI
-  sDV(usdF.format(bnbPrice), 'price-bnb');
-  sDPD(bnbPCP, 'pc-bnb');
-  let bnbFromSuppliedAccount =  gSA(suppliedAmounts, 'bnb');
+  setDisplayValue(usdFormatter.format(bnbPrice), 'price-bnb');
+  setDenomPriceData(bnbPriceChangePercent, 'pc-bnb');
+  let bnbFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'bnb');
   // let bnbFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'bnb').amount;
-  const bnbSupplied = sDTS(bnbFromSuppliedAccount, TO_8, bnbPrice, 'ts-bnb');
-  sDTS(bnbFromSuppliedAccount, TO_8, bnbPrice, 'ts-m-bnb');
-  sDV(usdF.format(bnbReward), 'te-bnb');
-  sDV(usdF.format(bnbReward), 'te-m-bnb');
-  sDAPY(bnbPrice, bnbLocked, 'bnb-a', kavaPrice, iPData, 'ea-bnb');
-  sDAPY(bnbPrice, bnbLocked, 'bnb-a', kavaPrice, iPData, 'ea-m-bnb');
-  sUABD('bnb', bnbUSDX, bnbUsdxLimit);
-
-
+  const bnbSupplied = setDenomTotalSupplied(bnbFromSuppliedAccount, TO_8, bnbPrice, 'ts-bnb');
+  setDenomTotalSupplied(bnbFromSuppliedAccount, TO_8, bnbPrice, 'ts-m-bnb');
+  setDisplayValue(usdFormatter.format(bnbReward), 'te-bnb');
+  setDisplayValue(usdFormatter.format(bnbReward), 'te-m-bnb');
+  setDenomAPY(bnbPrice, bnbLocked, 'bnb-a', kavaPrice, incentiveParamsData, 'ea-bnb');
+  setDenomAPY(bnbPrice, bnbLocked, 'bnb-a', kavaPrice, incentiveParamsData, 'ea-m-bnb');
+  setUsdxAmountsByDenom('bnb', bnbUSDX, bnbUsdxLimit);
 
 
   // new busd
-  let busdPlatformAmounts = await tLABBD(busdCdPData.result, 'busd-a');
+  let busdPlatformAmounts = await totalLockedAndBorrowedByDenom(busdCdPData.result, 'busd-a');
   let busdLocked;
   let busdBorrowed;
   let busdFees;
@@ -389,31 +363,31 @@ var updateDV = async () => {
     busdBorrowed = busdPlatformAmounts.borrowed;
     busdFees = busdPlatformAmounts.fees;
   }
-  let busdUsdxLimit = await uDLBD('BUSD-A', cdpParamsData)
-  let busdUSDX = sUA(busdUsdxLimit, busdBorrowed, busdFees)
-  let busdPrice = Number(busdMD.lastPrice);
-  const busdPCP = Number(busdMD.priceChangePercent);
+  let busdUsdxLimit = await usdxDebtLimitByDenom('BUSD-A', cdpParamsData)
+  let busdUSDX = setUsdxAmount(busdUsdxLimit, busdBorrowed, busdFees)
+  let busdPrice = Number(busdMarketData.lastPrice);
+  const busdPriceChangePercent = Number(busdMarketData.priceChangePercent);
   let {
     busdUsd,
-    busdMC,
+    busdMarketCap,
     busdSupply,
-    busdAL
-  } = await sDTSV(supplyData, bep3ParamsData, busdPrice, 'busd');
+    busdAssetLimit
+  } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, busdPrice, 'busd');
 
   // set busd info in UI
-  sDV(usdF.format(busdPrice), 'price-busd');
-  sDPD(busdPCP, 'pc-busd');
-  let busdFromSuppliedAccount =  gSA(suppliedAmounts, 'busd');
-  const busdSupplied = sDTS(busdFromSuppliedAccount, TO_8, busdPrice, 'ts-busd');
-  sDTS(busdFromSuppliedAccount, TO_8, busdPrice, 'ts-m-busd');
-  sDV(usdF.format(busdReward), 'te-busd');
-  sDV(usdF.format(busdReward), 'te-m-busd');
-  sDAPY(busdPrice, busdLocked, 'busd-a', kavaPrice, iPData, 'ea-busd');
-  sDAPY(busdPrice, busdLocked, 'busd-a', kavaPrice, iPData, 'ea-m-busd');
-  sUABD('busd', busdUSDX, busdUsdxLimit);
+  setDisplayValue(usdFormatter.format(busdPrice), 'price-busd');
+  setDenomPriceData(busdPriceChangePercent, 'pc-busd');
+  let busdFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'busd');
+  const busdSupplied = setDenomTotalSupplied(busdFromSuppliedAccount, TO_8, busdPrice, 'ts-busd');
+  setDenomTotalSupplied(busdFromSuppliedAccount, TO_8, busdPrice, 'ts-m-busd');
+  setDisplayValue(usdFormatter.format(busdReward), 'te-busd');
+  setDisplayValue(usdFormatter.format(busdReward), 'te-m-busd');
+  setDenomAPY(busdPrice, busdLocked, 'busd-a', kavaPrice, incentiveParamsData, 'ea-busd');
+  setDenomAPY(busdPrice, busdLocked, 'busd-a', kavaPrice, incentiveParamsData, 'ea-m-busd');
+  setUsdxAmountsByDenom('busd', busdUSDX, busdUsdxLimit);
 
   // new btc
-  let btcPlatformAmounts = await tLABBD(btcCdPData.result, 'btcb-a');
+  let btcPlatformAmounts = await totalLockedAndBorrowedByDenom(btcCdPData.result, 'btcb-a');
   let btcLocked;
   let btcBorrowed;
   let btcFees;
@@ -422,35 +396,35 @@ var updateDV = async () => {
     btcBorrowed = btcPlatformAmounts.borrowed;
     btcFees = btcPlatformAmounts.fees;
   }
-  let btcUsdxLimit = await uDLBD('BTCB-A', cdpParamsData)
-  let btcUSDX = sUA(btcUsdxLimit, btcBorrowed, btcFees)
-  let btcPrice = Number(btcbMD.lastPrice);
-  const btcPCP = Number(btcbMD.priceChangePercent);
+  let btcUsdxLimit = await usdxDebtLimitByDenom('BTCB-A', cdpParamsData)
+  let btcUSDX = setUsdxAmount(btcUsdxLimit, btcBorrowed, btcFees)
+  let btcPrice = Number(btcbMarketData.lastPrice);
+  const btcPriceChangePercent = Number(btcbMarketData.priceChangePercent);
   let {
     btcbUsd,
-    btcbMC,
+    btcbMarketCap,
     btcbSupply,
-    btcbAL
-  } = await sDTSV(supplyData, bep3ParamsData, btcPrice, 'btcb');
+    btcbAssetLimit
+  } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, btcPrice, 'btcb');
 
   // set btc info in UI
-  sDV(usdF.format(btcPrice), 'price-btc');
-  sDPD(btcPCP, 'pc-btc');
-  let btcFromSuppliedAccount =  gSA(suppliedAmounts, 'btcb');
+  setDisplayValue(usdFormatter.format(btcPrice), 'price-btc');
+  setDenomPriceData(btcPriceChangePercent, 'pc-btc');
+  let btcFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'btcb');
   // let btcFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'btcb').amount;
-  const btcSupplied = sDTS(btcFromSuppliedAccount, TO_8, btcPrice, 'ts-btc');
-  sDTS(btcFromSuppliedAccount, TO_8, btcPrice, 'ts-m-btc');
-  sDV(usdF.format(btcbReward), 'te-btc');
-  sDV(usdF.format(btcbReward), 'te-m-btc');
-  sDAPY(btcPrice, btcLocked, 'btcb-a', kavaPrice, iPData, 'ea-btc');
-  sDAPY(btcPrice, btcLocked, 'btcb-a', kavaPrice, iPData, 'ea-m-btc');
-  sUABD('btc', btcUSDX, btcUsdxLimit)
+  const btcSupplied = setDenomTotalSupplied(btcFromSuppliedAccount, TO_8, btcPrice, 'ts-btc');
+  setDenomTotalSupplied(btcFromSuppliedAccount, TO_8, btcPrice, 'ts-m-btc');
+  setDisplayValue(usdFormatter.format(btcbReward), 'te-btc');
+  setDisplayValue(usdFormatter.format(btcbReward), 'te-m-btc');
+  setDenomAPY(btcPrice, btcLocked, 'btcb-a', kavaPrice, incentiveParamsData, 'ea-btc');
+  setDenomAPY(btcPrice, btcLocked, 'btcb-a', kavaPrice, incentiveParamsData, 'ea-m-btc');
+  setUsdxAmountsByDenom('btc', btcUSDX, btcUsdxLimit)
 
 
 
 
   // new xrp
-  let xrpPlatformAmounts = await tLABBD(xrpCdPData.result, 'xrpb-a');
+  let xrpPlatformAmounts = await totalLockedAndBorrowedByDenom(xrpCdPData.result, 'xrpb-a');
   let xrpLocked;
   let xrpBorrowed;
   let xrpFees;
@@ -459,32 +433,32 @@ var updateDV = async () => {
     xrpBorrowed = xrpPlatformAmounts.borrowed;
     xrpFees = xrpPlatformAmounts.fees;
   }
-  let xrpUsdxLimit = await uDLBD('XRPB-A', cdpParamsData)
-  let xrpUSDX = sUA(xrpUsdxLimit, xrpBorrowed, xrpFees)
-  let xrpbPrice = Number(xrpbMD.lastPrice);
-  const xrpbPCP = Number(xrpbMD.priceChangePercent);
+  let xrpUsdxLimit = await usdxDebtLimitByDenom('XRPB-A', cdpParamsData)
+  let xrpUSDX = setUsdxAmount(xrpUsdxLimit, xrpBorrowed, xrpFees)
+  let xrpbPrice = Number(xrpbMarketData.lastPrice);
+  const xrpbPriceChangePercent = Number(xrpbMarketData.priceChangePercent);
   let {
     xrpbUsd,
-    xrpbMC,
+    xrpbMarketCap,
     xrpbSupply,
-    xrpbAL
-  } = await sDTSV(supplyData, bep3ParamsData, xrpbPrice, 'xrpb');
+    xrpbAssetLimit
+  } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, xrpbPrice, 'xrpb');
 
   // set xrp info in UI
-  sDV(usdF.format(xrpbPrice), 'price-xrp');
-  sDPD(xrpbPCP, 'pc-xrp');
-  let xrpFromSuppliedAccount =  gSA(suppliedAmounts, 'xrpb');
+  setDisplayValue(usdFormatter.format(xrpbPrice), 'price-xrp');
+  setDenomPriceData(xrpbPriceChangePercent, 'pc-xrp');
+  let xrpFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'xrpb');
   // let xrpFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'xrpb').amount;
-  const xrpbSupplied = sDTS(xrpFromSuppliedAccount, TO_8, xrpbPrice, 'ts-xrp');
-  sDTS(xrpFromSuppliedAccount, TO_8, xrpbPrice, 'ts-m-xrp');
-  sDV(usdF.format(xrpbReward), 'te-xrpb');
-  sDV(usdF.format(xrpbReward), 'te-m-xrpb');
-  sDAPY(xrpbPrice, xrpLocked, 'xrpb-a', kavaPrice, iPData, 'ea-xrp');
-  sDAPY(xrpbPrice, xrpLocked, 'xrpb-a', kavaPrice, iPData, 'ea-m-xrp');
-  sUABD('xrp', xrpUSDX, xrpUsdxLimit);
+  const xrpbSupplied = setDenomTotalSupplied(xrpFromSuppliedAccount, TO_8, xrpbPrice, 'ts-xrp');
+  setDenomTotalSupplied(xrpFromSuppliedAccount, TO_8, xrpbPrice, 'ts-m-xrp');
+  setDisplayValue(usdFormatter.format(xrpbReward), 'te-xrpb');
+  setDisplayValue(usdFormatter.format(xrpbReward), 'te-m-xrpb');
+  setDenomAPY(xrpbPrice, xrpLocked, 'xrpb-a', kavaPrice, incentiveParamsData, 'ea-xrp');
+  setDenomAPY(xrpbPrice, xrpLocked, 'xrpb-a', kavaPrice, incentiveParamsData, 'ea-m-xrp');
+  setUsdxAmountsByDenom('xrp', xrpUSDX, xrpUsdxLimit);
 
   // new kava
-  let ukavaPlatformAmounts = await tLABBD(kavaCdPData.result, 'ukava-a');
+  let ukavaPlatformAmounts = await totalLockedAndBorrowedByDenom(kavaCdPData.result, 'ukava-a');
   let ukavaLocked;
   let ukavaBorrowed;
   let ukavaFees;
@@ -493,29 +467,29 @@ var updateDV = async () => {
     ukavaBorrowed = ukavaPlatformAmounts.borrowed;
     ukavaFees = ukavaPlatformAmounts.fees;
   }
-  let ukavaUsdxLimit = await uDLBD('UKAVA-A', cdpParamsData)
-  let ukavaUSDX = sUA(ukavaUsdxLimit, ukavaBorrowed, ukavaFees)
-  const kavaPCP = Number(kavaMD.priceChangePercent);
-  let { ukavaUsd, ukavaMC, ukavaSupply } = await sDTSV(supplyData, bep3ParamsData, kavaPrice, 'ukava');
+  let ukavaUsdxLimit = await usdxDebtLimitByDenom('UKAVA-A', cdpParamsData)
+  let ukavaUSDX = setUsdxAmount(ukavaUsdxLimit, ukavaBorrowed, ukavaFees)
+  const kavaPriceChangePercent = Number(kavaMarketData.priceChangePercent);
+  let { ukavaUsd, ukavaMarketCap, ukavaSupply } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, kavaPrice, 'ukava');
 
   // set kava info in UI
-  sDV(usdF.format(kavaPrice), 'price-kava');
-  sDPD(kavaPCP, 'pc-kava');
-  let kavaFromSuppliedAccount =  gSA(suppliedAmounts, 'ukava');
+  setDisplayValue(usdFormatter.format(kavaPrice), 'price-kava');
+  setDenomPriceData(kavaPriceChangePercent, 'pc-kava');
+  let kavaFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'ukava');
   // let kavaFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'ukava').amount;
-  const kavaSupplied = sDTS(kavaFromSuppliedAccount, TO_6, kavaPrice, 'ts-kava');
-  sDTS(kavaFromSuppliedAccount, TO_6, kavaPrice, 'ts-m-kava');
-  sDV(usdF.format(kavaReward), 'te-kava');
-  sDV(usdF.format(kavaReward), 'te-m-kava');
-  sDAPY(kavaPrice, ukavaLocked, 'ukava-a', kavaPrice, iPData, 'ea-kava');
-  sDAPY(kavaPrice, ukavaLocked, 'ukava-a', kavaPrice, iPData, 'ea-m-kava');
-  sUABD('kava', ukavaUSDX, ukavaUsdxLimit);
+  const kavaSupplied = setDenomTotalSupplied(kavaFromSuppliedAccount, TO_6, kavaPrice, 'ts-kava');
+  setDenomTotalSupplied(kavaFromSuppliedAccount, TO_6, kavaPrice, 'ts-m-kava');
+  setDisplayValue(usdFormatter.format(kavaReward), 'te-kava');
+  setDisplayValue(usdFormatter.format(kavaReward), 'te-m-kava');
+  setDenomAPY(kavaPrice, ukavaLocked, 'ukava-a', kavaPrice, incentiveParamsData, 'ea-kava');
+  setDenomAPY(kavaPrice, ukavaLocked, 'ukava-a', kavaPrice, incentiveParamsData, 'ea-m-kava');
+  setUsdxAmountsByDenom('kava', ukavaUSDX, ukavaUsdxLimit);
 
 
 
 
   // new hard
-  let hardPlatformAmounts = await tLABBD(hardCdPData.result, 'hard-a');
+  let hardPlatformAmounts = await totalLockedAndBorrowedByDenom(hardCdPData.result, 'hard-a');
   let hardLocked;
   let hardBorrowed;
   let hardFees;
@@ -524,117 +498,114 @@ var updateDV = async () => {
     hardBorrowed = hardPlatformAmounts.borrowed;
     hardFees = hardPlatformAmounts.fees;
   }
-  let hardUsdxLimit = await uDLBD('HARD-A', cdpParamsData)
-  let hardUSDX = sUA(hardUsdxLimit, hardBorrowed, hardFees)
-  let hardPrice = Number(hardMD.lastPrice);
-  const hardPCP = Number(hardMD.priceChangePercent);
-  let { hardUsd, hardMC, hardSupply } = await sDTSV(supplyData, bep3ParamsData, hardPrice, 'hard');
+  let hardUsdxLimit = await usdxDebtLimitByDenom('HARD-A', cdpParamsData)
+  let hardUSDX = setUsdxAmount(hardUsdxLimit, hardBorrowed, hardFees)
+  let hardPrice = Number(hardMarketData.lastPrice);
+  const hardPriceChangePercent = Number(hardMarketData.priceChangePercent);
+  let { hardUsd, hardMarketCap, hardSupply } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, hardPrice, 'hard');
 
   // // set hard info in UI
-  sDV(usdF.format(hardPrice), 'price-hard');
-  sDPD(hardPCP, 'pc-hard');
-  let hardFromSuppliedAccount =  gSA(suppliedAmounts, 'hard');
+  setDisplayValue(usdFormatter.format(hardPrice), 'price-hard');
+  setDenomPriceData(hardPriceChangePercent, 'pc-hard');
+  let hardFromSuppliedAccount =  getSuppliedAmount(suppliedAmounts, 'hard');
   // let hardFromSuppliedAccount = suppliedAmounts.find((a) => a.denom === 'hard').amount;
-  const hardSupplied = sDTS(hardFromSuppliedAccount, TO_6, hardPrice, 'ts-hard');
-  sDTS(hardFromSuppliedAccount, TO_6, hardPrice, 'ts-m-hard');
-  sDV(usdF.format(hardReward), 'te-hard');
-  sDV(usdF.format(hardReward), 'te-m-hard');
-  sDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, iPData, 'ea-hard');
-  sDAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, iPData, 'ea-m-hard');
-  sUABD('hard', hardUSDX, hardUsdxLimit);
+  const hardSupplied = setDenomTotalSupplied(hardFromSuppliedAccount, TO_6, hardPrice, 'ts-hard');
+  setDenomTotalSupplied(hardFromSuppliedAccount, TO_6, hardPrice, 'ts-m-hard');
+  setDisplayValue(usdFormatter.format(hardReward), 'te-hard');
+  setDisplayValue(usdFormatter.format(hardReward), 'te-m-hard');
+  setDenomAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-hard');
+  setDenomAPY(hardPrice, hardLocked, 'hard-a', kavaPrice, incentiveParamsData, 'ea-m-hard');
+  setUsdxAmountsByDenom('hard', hardUSDX, hardUsdxLimit);
 
 
   // Total Assets Supplied
   const totalAS = bnbSupplied + busdSupplied + btcSupplied + xrpbSupplied + kavaSupplied + hardSupplied
-   sDV(formatMNDS(totalAS), "t-a-s");
+   setDisplayValue(formatMoneyNoDollarSign(totalAS), "t-a-s");
 
   // Total Assets Borrowed
   let totalUSDX = bnbUSDX + btcUSDX + busdUSDX + xrpUSDX + ukavaUSDX + hardUSDX;
-  sDV(formatMNDS(totalUSDX), 't-a-b');
-
-
+  setDisplayValue(formatMoneyNoDollarSign(totalUSDX), 't-a-b');
 
   // defi hub stats
+  const usdxPrice = usdxMarketData.market_data.current_price.usd;
+  const usdxPCPC = usdxMarketData.market_data.price_change_percentage_24h
+  let { usdxUsd, usdxMarketCap, usdxSupply } = await setDenomTotalSupplyValue(supplyData, bep3ParamsData, usdxPrice, 'usdx');
 
-  const usdxPrice = usdxMD.market_data.current_price.usd;
-  const usdxPCPC = usdxMD.market_data.price_change_percentage_24h
-  let { usdxUsd, usdxMC, usdxSupply } = await sDTSV(supplyData, bep3ParamsData, usdxPrice, 'usdx');
+  const totalMarketCap = bnbUsd + busdUsd + btcbUsd + xrpbUsd + ukavaUsd + hardUsd + usdxUsd
+  setDisplayValue(formatMoneyNoDollarSign(totalMarketCap), 't-m-c');
 
-  const totalMC = bnbUsd + busdUsd + btcbUsd + xrpbUsd + ukavaUsd + hardUsd + usdxUsd
-  sDV(formatMNDS(totalMC), 't-m-c');
+  setDisplayValue(usdFormatter.format(kavaPrice), 'price-d-kava');
+  setDenomPriceData(kavaPriceChangePercent, 'pc-d-kava');
+  setDisplayValue(ukavaMarketCap, 'mc-kava')
+  setDisplayValue(ukavaSupply, 's-kava')
+  setDisplayValue(usdFormatter.format(kavaPrice), 'price-md-kava');
+  setDenomPriceData(kavaPriceChangePercent, 'pc-md-kava');
+  setDisplayValue(ukavaMarketCap, 'mc-m-kava')
+  setDisplayValue(ukavaSupply, 's-m-kava')
 
-  sDV(usdF.format(kavaPrice), 'price-d-kava');
-  sDPD(kavaPCP, 'pc-d-kava');
-  sDV(ukavaMC, 'mc-kava')
-  sDV(ukavaSupply, 's-kava')
-  sDV(usdF.format(kavaPrice), 'price-md-kava');
-  sDPD(kavaPCP, 'pc-md-kava');
-  sDV(ukavaMC, 'mc-m-kava')
-  sDV(ukavaSupply, 's-m-kava')
+  setDisplayValue(usdFormatter.format(hardPrice), 'price-d-hard');
+  setDenomPriceData(hardPriceChangePercent, 'pc-d-hard');
+  setDisplayValue(hardMarketCap, 'mc-hard')
+  setDisplayValue(hardSupply, 's-hard')
+  setDisplayValue(usdFormatter.format(hardPrice), 'price-md-hard');
+  setDenomPriceData(hardPriceChangePercent, 'pc-md-hard');
+  setDisplayValue(hardMarketCap, 'mc-m-hard')
+  setDisplayValue(hardSupply, 's-m-hard')
 
-  sDV(usdF.format(hardPrice), 'price-d-hard');
-  sDPD(hardPCP, 'pc-d-hard');
-  sDV(hardMC, 'mc-hard')
-  sDV(hardSupply, 's-hard')
-  sDV(usdF.format(hardPrice), 'price-md-hard');
-  sDPD(hardPCP, 'pc-md-hard');
-  sDV(hardMC, 'mc-m-hard')
-  sDV(hardSupply, 's-m-hard')
+  setDisplayValue(usdFormatter.format(usdxPrice), 'price-d-usdx');
+  setDenomPriceData(usdxPCPC, 'pc-d-usdx');
+  setDisplayValue(usdxMarketCap, 'mc-usdx')
+  setDisplayValue(usdxSupply, 's-usdx')
+  setDisplayValue((setUsdxAssetLimit(cdpParamsData) + ' ' + denomLabel('usdx')), 'al-usdx')
+  setDisplayValue(usdFormatter.format(usdxPrice), 'price-md-usdx');
+  setDenomPriceData(usdxPCPC, 'pc-md-usdx');
+  setDisplayValue(usdxMarketCap, 'mc-m-usdx')
+  setDisplayValue(usdxSupply, 's-m-usdx')
+  setDisplayValue((setUsdxAssetLimit(cdpParamsData) + ' ' + denomLabel('usdx')), 'al-m-usdx')
 
-  sDV(usdF.format(usdxPrice), 'price-d-usdx');
-  sDPD(usdxPCPC, 'pc-d-usdx');
-  sDV(usdxMC, 'mc-usdx')
-  sDV(usdxSupply, 's-usdx')
-  sDV((sUAL(cdpParamsData) + ' ' + dLab('usdx')), 'al-usdx')
-  sDV(usdF.format(usdxPrice), 'price-md-usdx');
-  sDPD(usdxPCPC, 'pc-md-usdx');
-  sDV(usdxMC, 'mc-m-usdx')
-  sDV(usdxSupply, 's-m-usdx')
-  sDV((sUAL(cdpParamsData) + ' ' + dLab('usdx')), 'al-m-usdx')
+  setDisplayValue(usdFormatter.format(btcPrice), 'price-d-btc');
+  setDenomPriceData(btcPriceChangePercent, 'pc-d-btc');
+  setDisplayValue(btcbMarketCap, 'mc-btc')
+  setDisplayValue(btcbSupply, 's-btc')
+  setDisplayValue(btcbAssetLimit, 'al-btc')
+  setDisplayValue(usdFormatter.format(btcPrice), 'price-md-btc');
+  setDenomPriceData(btcPriceChangePercent, 'pc-md-btc');
+  setDisplayValue(btcbMarketCap, 'mc-m-btc')
+  setDisplayValue(btcbSupply, 's-m-btc')
+  setDisplayValue(btcbAssetLimit, 'al-m-btc')
 
-  sDV(usdF.format(btcPrice), 'price-d-btc');
-  sDPD(btcPCP, 'pc-d-btc');
-  sDV(btcbMC, 'mc-btc')
-  sDV(btcbSupply, 's-btc')
-  sDV(btcbAL, 'al-btc')
-  sDV(usdF.format(btcPrice), 'price-md-btc');
-  sDPD(btcPCP, 'pc-md-btc');
-  sDV(btcbMC, 'mc-m-btc')
-  sDV(btcbSupply, 's-m-btc')
-  sDV(btcbAL, 'al-m-btc')
+  setDisplayValue(usdFormatter.format(xrpbPrice), 'price-d-xrp');
+  setDenomPriceData(xrpbPriceChangePercent, 'pc-d-xrp');
+  setDisplayValue(xrpbMarketCap, 'mc-xrp')
+  setDisplayValue(xrpbSupply, 's-xrp')
+  setDisplayValue(xrpbAssetLimit, 'al-xrp')
+  setDisplayValue(usdFormatter.format(xrpbPrice), 'price-md-xrp');
+  setDenomPriceData(xrpbPriceChangePercent, 'pc-md-xrp');
+  setDisplayValue(xrpbMarketCap, 'mc-m-xrp')
+  setDisplayValue(xrpbSupply, 's-m-xrp')
+  setDisplayValue(xrpbAssetLimit, 'al-m-xrp')
 
-  sDV(usdF.format(xrpbPrice), 'price-d-xrp');
-  sDPD(xrpbPCP, 'pc-d-xrp');
-  sDV(xrpbMC, 'mc-xrp')
-  sDV(xrpbSupply, 's-xrp')
-  sDV(xrpbAL, 'al-xrp')
-  sDV(usdF.format(xrpbPrice), 'price-md-xrp');
-  sDPD(xrpbPCP, 'pc-md-xrp');
-  sDV(xrpbMC, 'mc-m-xrp')
-  sDV(xrpbSupply, 's-m-xrp')
-  sDV(xrpbAL, 'al-m-xrp')
+  setDisplayValue(usdFormatter.format(busdPrice), 'price-d-busd');
+  setDenomPriceData(busdPriceChangePercent, 'pc-d-busd');
+  setDisplayValue(busdMarketCap, 'mc-busd')
+  setDisplayValue(busdSupply, 's-busd')
+  setDisplayValue(busdAssetLimit, 'al-busd')
+  setDisplayValue(usdFormatter.format(busdPrice), 'price-md-busd');
+  setDenomPriceData(busdPriceChangePercent, 'pc-md-busd');
+  setDisplayValue(busdMarketCap, 'mc-m-busd')
+  setDisplayValue(busdSupply, 's-m-busd')
+  setDisplayValue(busdAssetLimit, 'al-m-busd')
 
-  sDV(usdF.format(busdPrice), 'price-d-busd');
-  sDPD(busdPCP, 'pc-d-busd');
-  sDV(busdMC, 'mc-busd')
-  sDV(busdSupply, 's-busd')
-  sDV(busdAL, 'al-busd')
-  sDV(usdF.format(busdPrice), 'price-md-busd');
-  sDPD(busdPCP, 'pc-md-busd');
-  sDV(busdMC, 'mc-m-busd')
-  sDV(busdSupply, 's-m-busd')
-  sDV(busdAL, 'al-m-busd')
-
-  sDV(usdF.format(bnbPrice), 'price-d-bnb');
-  sDPD(bnbPCP, 'pc-d-bnb');
-  sDV(bnbMC, 'mc-bnb')
-  sDV(bnbSupply, 's-bnb')
-  sDV(bnbAL, 'al-bnb')
-  sDV(usdF.format(bnbPrice), 'price-md-bnb');
-  sDPD(bnbPCP, 'pc-md-bnb');
-  sDV(bnbMC, 'mc-m-bnb')
-  sDV(bnbSupply, 's-m-bnb')
-  sDV(bnbAL, 'al-m-bnb')
+  setDisplayValue(usdFormatter.format(bnbPrice), 'price-d-bnb');
+  setDenomPriceData(bnbPriceChangePercent, 'pc-d-bnb');
+  setDisplayValue(bnbMarketCap, 'mc-bnb')
+  setDisplayValue(bnbSupply, 's-bnb')
+  setDisplayValue(bnbAssetLimit, 'al-bnb')
+  setDisplayValue(usdFormatter.format(bnbPrice), 'price-md-bnb');
+  setDenomPriceData(bnbPriceChangePercent, 'pc-md-bnb');
+  setDisplayValue(bnbMarketCap, 'mc-m-bnb')
+  setDisplayValue(bnbSupply, 's-m-bnb')
+  setDisplayValue(bnbAssetLimit, 'al-m-bnb')
 
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
@@ -642,7 +613,7 @@ var updateDV = async () => {
 };
 
 var main = async () => {
-    await updateDV()
+    await updateDisplayValues()
     await sleep(60000)
     main()
 }
