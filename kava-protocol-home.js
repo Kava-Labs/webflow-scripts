@@ -433,7 +433,7 @@ const setTotalAssetDisplayValue = async (siteData, cssIds) => {
   setDisplayValueById(cssId, totalAssetValue)
 }
 
-const setDisplayValueById = (value, cssId) => {
+const setDisplayValueById = (cssId, value) => {
   document.getElementById(cssId).innerHTML = value;
 }
 
