@@ -389,7 +389,7 @@ const setTotalLockedDisplayValues = async (denoms, siteData, cssIds) => {
     const denomTotalSupplyValue = Number(denomTotalSupplyCoin * price);
 
     const denomTotalLocked = displayInMillions(denomTotalSupplyValue);
-    setDisplayValueById(cssId, denomTotalLocked)
+    setDisplayValueById(cssId, noDollarSign(denomTotalLocked))
   }
 }
 
@@ -430,11 +430,10 @@ const setTotalAssetDisplayValue = async (siteData, cssIds) => {
   const totalBorrowed = siteData['usdxBorrowed'] ? siteData['usdxBorrowed'].total : 0
 
   const totalAssetValue = usdFormatter.format(totalSupplied + totalBorrowed);
-  setDisplayValueById(cssId, totalAssetValue)
+  setDisplayValueById(cssId, noDollarSign(totalAssetValue))
 }
 
 const setDisplayValueById = (cssId, value) => {
-  console.log(cssId, value)
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
 }
@@ -550,7 +549,8 @@ const main = async () => {
     'hbtc-a',
     'xrpb-a',
     'hard-a',
-    'ukava-a'
+    'ukava-a',
+    'foo-a'
   ]
   Promise.all(
     await updateDisplayValues(denoms),
