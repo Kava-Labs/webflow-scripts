@@ -434,7 +434,9 @@ const setTotalAssetDisplayValue = async (siteData, cssIds) => {
 }
 
 const setDisplayValueById = (cssId, value) => {
-  document.getElementById(cssId).innerHTML = value;
+  console.log(cssId, value)
+  const element = document.getElementById(cssId)
+  if (element) { element.innerHTML = value; }
 }
 
 const updateDisplayValues = async (denoms) => {
