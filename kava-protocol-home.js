@@ -362,7 +362,7 @@ const setTotalRewardsDistributedDisplayValue = async (siteData, cssIds) => {
     totalRewardsDistributed += coinPerYear * price;
   }
   const totalRewardsDistributedUsd = usdFormatter.format(totalRewardsDistributed);
-  setDisplayValueById(cssId, totalRewardsDistributedUsd)
+  setDisplayValueById(cssId, noDollarSign(totalRewardsDistributedUsd))
 }
 
 const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
@@ -389,7 +389,7 @@ const setTotalLockedDisplayValues = async (denoms, siteData, cssIds) => {
     const denomTotalSupplyValue = Number(denomTotalSupplyCoin * price);
 
     const denomTotalLocked = displayInMillions(denomTotalSupplyValue);
-    setDisplayValueById(cssId, noDollarSign(denomTotalLocked))
+    setDisplayValueById(cssId, denomTotalLocked)
   }
 }
 
@@ -549,8 +549,7 @@ const main = async () => {
     'hbtc-a',
     'xrpb-a',
     'hard-a',
-    'ukava-a',
-    'foo-a'
+    'ukava-a'
   ]
   Promise.all(
     await updateDisplayValues(denoms),
