@@ -543,19 +543,14 @@ const updateDisplayValues = async (denoms) => {
 
 const main = async () => {
   const denoms = [
-    'bnb-a',
-    'btcb-a',
-    'busd-a',
-    'hbtc-a',
-    'xrpb-a',
-    'hard-a',
+    'bnb-a', 'btcb-a', 'busd-a',
+    'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a'
   ]
-  Promise.all(
-    await updateDisplayValues(denoms),
-    await sleep(60000),
-    main()
-  )
+
+  await updateDisplayValues(denoms);
+  await sleep(60000);
+  main()
 }
 
 const sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
