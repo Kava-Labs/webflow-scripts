@@ -936,7 +936,7 @@ var main = async () => {
   ]
 
   await updateDisplayValues(denoms);
-  await sleep(60000)
+  await sleep(30000);
   main()
 }
 

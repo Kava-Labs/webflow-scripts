@@ -253,7 +253,7 @@ var updateDisplayValues = async() => {
 
 var main = async () => {
   await updateDisplayValues();
-  await sleep(60000);
+  await sleep(30000);
   main()
 }
 
