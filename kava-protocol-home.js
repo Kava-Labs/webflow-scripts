@@ -37,7 +37,7 @@ const setRewardsDates = (denoms) => {
       case 'xrpb-a':
         date = new Date("2020-12-02T14:00:14.333506701Z")
         break;
-      case 'htbc-a':
+      case 'hbtc-a':
         date = new Date("2021-03-15T14:00:14.333506701Z")
         break;
       case 'hard-a':
@@ -110,7 +110,7 @@ const formatRewardDenom = (denom) => {
 
 const commonDenomMapper = (denom) => {
   let formattedDenom;
-  switch(denom) {
+  switch(denom.toLowerCase()) {
     case 'btc':
       formattedDenom = 'btcb-a';
       break;
