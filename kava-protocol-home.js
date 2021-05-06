@@ -110,7 +110,7 @@ const formatRewardDenom = (denom) => {
 
 const commonDenomMapper = (denom) => {
   let formattedDenom;
-  switch(denom) {
+  switch(denom.toLowerCase()) {
     case 'btc':
       formattedDenom = 'btcb-a';
       break;

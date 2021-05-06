@@ -15,9 +15,9 @@ Each page in webflow has its own script. Scripts are named based on the page the
    4. Find your page, and click on the 'Settings' gear
    5. Navigate to the Custom Code section and look for the <script> tag
    6. Check against Staging
-      - Replace the src with your branch name link:
-         - https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@YOUR_BRANCH_HERE/FILE_NAME_OF_PAGE.min.js
-         - Example: https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@update-coins/hard-protocol-home.min.js
+      - Replace the src with your commit hash you would like deployed name link:
+         - https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@YOUR_COMMIT_HASH_HERE/FILE_NAME_OF_PAGE.min.js
+         - Example: https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@908asn349-8gh34/hard-protocol-home.min.js
       - Click Save
       - Repeat this process for each page you intend to update
       - Once all page scripts are updated, close pages window and click the 'Publish' dropdown in the upper right hand corner of the page
@@ -26,9 +26,9 @@ Each page in webflow has its own script. Scripts are named based on the page the
       - You can now view the changes out at the staging url, viewable by clicking the link icon in the staging dropwdown row
    7. Publish to Production
       - Go through PR review process and get your PR approved and merged into master
-      - Repeat steps 1 through 6, but instead of using your branch, use master. Remember to do this for each page you've updated and publish to staging first to verify scripts are still working
-         - https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@master/FILE_NAME_OF_PAGE.min.js
-         - Example: https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@master/hard-protocol-home.min.js
+      - Repeat steps 1 through 6, but instead of using your branch commit hash, use the new master commit hash. Remember to do this for each page you've updated and publish to staging first to verify scripts are still working
+         - https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@NEW_MASTER_COMMIT_HASH/FILE_NAME_OF_PAGE.min.js
+         - Example: https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@12nr02f8c4nt90/hard-protocol-home.min.js
       - If all scripts are working as expected:
          - Verify with design team that we are okay to publish to production. Design team can have changes out in webflow at the same time and we may not want to publish them yet.
          - If design has given approval:
