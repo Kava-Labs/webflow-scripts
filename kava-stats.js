@@ -266,6 +266,10 @@ const mapCssIds = (denoms) => {
       d: formatCssId('al', denom),
       m: formatCssId('al-m', denom)
     }
+    ids[denom].borrowApy = {
+      d: formatCssId('borrow-apy', denom),
+      m: formatCssId('al-m', denom)
+    }
   }
   return ids
 }
@@ -388,7 +392,6 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
     }
 
     coins[denom] = { debtLimit: limit }
-    console.log(coins)
   }
 
       for (const denom of cdpParamsData.collateral_params) {
