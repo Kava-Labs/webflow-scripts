@@ -377,9 +377,9 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
   }
-  let limit = 0;
-  for (const denom of denoms) {
 
+  for (const denom of denoms) {
+    let limit = 0;
 
     if (denom === 'usdx') {
       limit = usdxDebtLimit
