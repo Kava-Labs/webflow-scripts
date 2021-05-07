@@ -266,10 +266,7 @@ const mapCssIds = (denoms) => {
       d: formatCssId('al', denom),
       m: formatCssId('al-m', denom)
     }
-    ids[denom].borrowApy = {
-      d: formatCssId('borrow-apy', denom),
-      m: formatCssId('al-m', denom)
-    }
+    ids[denom].borrowApy = formatCssId('borrow-apy', denom)
   }
   return ids
 }
@@ -643,8 +640,10 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const borrowApy = cdpParamsData[denom].stabilityFeePercentage;
+    const desktopCssId = cssIds[denom]['borrowApy'];
+    setDisplayValueById(desktopCssId, borrowApy + "%")
+    console.log(borrowApy);
   }
-  console.log(borrowApy);
 };
 
 const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
