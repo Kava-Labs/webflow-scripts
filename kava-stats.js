@@ -373,6 +373,9 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
       const debtLimit = denom.debt_limit ? Number(denom.debt_limit.amount)/FACTOR_SIX : 0;
       mappedLimits[denom.type] = { debtLimit }
+
+      const secondsPerYear = 31536000;
+      const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
     }
 
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
@@ -396,8 +399,9 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
         const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
         for (const coin in coins) {
           const denomWithSuffix = denom.denom.concat("-a");
-            if(coin === denomWithSuffix)
-            coins[coin]["stabilityFeePercentage"] = stabilityFeePercentage;
+            if(coin === denomWithSuffix) {
+              coins[coin]["stabilityFeePercentage"] = stabilityFeePercentage;
+            }
           }
         }
   return coins;
