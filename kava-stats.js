@@ -362,7 +362,7 @@ const mapPlatformAmounts = async (denoms, platformAmounts) => {
   return coins;
 };
 
-const mapUsdxLimits = async (denoms, cdpParamsData) => {
+const mapCdpParams = async (denoms, cdpParamsData) => {
   const coins = {};
 
   const mappedLimits = {};
@@ -376,9 +376,9 @@ const mapUsdxLimits = async (denoms, cdpParamsData) => {
 
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
   }
-
+  let limit = 0;
   for (const denom of denoms) {
-    let limit = 0;
+
 
     if (denom === 'usdx') {
       limit = usdxDebtLimit
@@ -388,10 +388,21 @@ const mapUsdxLimits = async (denoms, cdpParamsData) => {
     }
 
     coins[denom] = { debtLimit: limit }
+    console.log(coins)
   }
 
+      for (const denom of cdpParamsData.collateral_params) {
+        const secondsPerYear = 31536000;
+        const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
+        for (const coin in coins) {
+          const denomWithSuffix = denom.denom.concat("-a");
+            if(coin === denomWithSuffix)
+            coins[coin]["stabilityFeePercentage"] = stabilityFeePercentage;
+          }
+        }
   return coins;
 };
+
 
 const mapUsdxBorrowed = async (denoms, siteData) => {
   const coins = { total: 0 }
@@ -624,6 +635,15 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
   }
 }
 
+const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
+  const cdpParamsData = siteData['cdpParamsData'];
+
+  for (const denom of denoms) {
+    const borrowApy = cdpParamsData[denom].stabilityFeePercentage;
+  }
+  console.log(borrowApy);
+};
+
 const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
   const denomConversions = siteData['denomConversions']
 
@@ -751,7 +771,6 @@ const updateDisplayValues = async (denoms) => {
   const [
     pricefeedResponse,
     incentiveParamsResponse,
-
     kavaMarketResponse,
     hardMarketResponse,
     bnbMarketResponse,
@@ -759,12 +778,10 @@ const updateDisplayValues = async (denoms) => {
     btcbMarketResponse,
     xrpbMarketResponse,
     usdxMarketResponse,
-
     supplyAccountResponse,
     supplyTotalResponse,
     bep3SupplyResponse,
     bep3ParamsResponse,
-
     cdpParamsResponse,
     btcbCdpResponse,
     busdCdpResponse,
@@ -777,8 +794,6 @@ const updateDisplayValues = async (denoms) => {
   ] = await Promise.all([
     fetch(BASE_URL + "pricefeed/prices"),
     fetch(BASE_URL + "incentive/parameters"),
-
-
     fetch(BINANACE_URL + "ticker/24hr?symbol=KAVAUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=HARDUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=BNBUSDT"),
@@ -786,12 +801,10 @@ const updateDisplayValues = async (denoms) => {
     fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     fetch('https://api.coingecko.com/api/v3/coins/usdx'),
-
     fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "supply/total"),
     fetch(BASE_URL + "bep3/supplies"),
     fetch(BASE_URL + "bep3/parameters"),
-
     fetch(BASE_URL + "cdp/parameters"),
     fetch(BASE_URL + '/cdp/cdps/collateralType/btcb-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/busd-a'),
@@ -801,6 +814,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
   ]);
+
 
   const pricefeedPrices = await pricefeedResponse.json()
   const incentiveParamsJson = await incentiveParamsResponse.json();
@@ -825,6 +839,7 @@ const updateDisplayValues = async (denoms) => {
   const hardMarketData = await hardMarketResponse.json();
   const kavaMarketData = await kavaMarketResponse.json();
   const usdxMarketDataJson = await usdxMarketResponse.json();
+
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -874,7 +889,7 @@ const updateDisplayValues = async (denoms) => {
   const platformData = await mapPlatformAmounts(denoms, platformAmounts)
   siteData['platformAmounts'] = platformData
 
-  const cdpParamsData = await mapUsdxLimits(denoms, cdpParamsJson.result);
+  const cdpParamsData = await mapCdpParams(denoms, cdpParamsJson.result);
   siteData['cdpParamsData'] = cdpParamsData
 
   const usdxBorrowed = await mapUsdxBorrowed(denoms, siteData)
@@ -922,6 +937,7 @@ const updateDisplayValues = async (denoms) => {
   await setMarketCapDisplayValues(denoms, siteData, cssIds)
 
   await setSupplyDisplayValues(denoms, siteData, cssIds)
+  await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
