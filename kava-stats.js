@@ -268,7 +268,7 @@ const mapCssIds = (denoms) => {
     }
     ids[denom].borrowApy = formatCssId('borrow-apy', denom)
   }
-  return ids
+  return ids;
 }
 
 const mapPrices = async (denoms, pricefeedResult) => {
@@ -377,7 +377,7 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
       const secondsPerYear = 31536000;
       const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
-      mappedStabilityFees[denom.type] = { stabilityFeePercentage }
+      mappedStabilityFees[denom.type] = stabilityFeePercentage
     }
 
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
@@ -396,7 +396,6 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
     coins[denom] = { debtLimit: limit, stabilityFeePercentage: mappedStabilityFees[denom] }
   }
-
   return coins;
 };
 
