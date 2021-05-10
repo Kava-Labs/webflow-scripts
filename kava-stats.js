@@ -367,6 +367,7 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
   const coins = {};
 
   const mappedLimits = {};
+  const mappedStabilityFees = {};
   let usdxDebtLimit = 0;
   if(cdpParamsData) {
     for (const denom of cdpParamsData.collateral_params) {
@@ -376,6 +377,7 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
       const secondsPerYear = 31536000;
       const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
+      mappedStabilityFees[denom.type] = { stabilityFeePercentage }
     }
 
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
@@ -383,6 +385,7 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
 
   for (const denom of denoms) {
     let limit = 0;
+    let stabilityFee = ' ';
 
     if (denom === 'usdx') {
       limit = usdxDebtLimit
@@ -391,19 +394,9 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
       if(cdpParam) { limit = cdpParam.debtLimit }
     }
 
-    coins[denom] = { debtLimit: limit }
+    coins[denom] = { debtLimit: limit, stabilityFeePercentage: mappedStabilityFees[denom] }
   }
 
-      for (const denom of cdpParamsData.collateral_params) {
-        const secondsPerYear = 31536000;
-        const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
-        for (const coin in coins) {
-          const denomWithSuffix = denom.denom.concat("-a");
-            if(coin === denomWithSuffix) {
-              coins[coin]["stabilityFeePercentage"] = stabilityFeePercentage;
-            }
-          }
-        }
   return coins;
 };
 
