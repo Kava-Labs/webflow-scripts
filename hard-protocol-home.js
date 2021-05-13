@@ -147,7 +147,6 @@ const setApyByDenom = (siteData,  cssIds, denoms) => {
       const denomPrice = prices[rewardDenom].price;
       numerator += Number(reward[rewardDenom].amount) * denomPrice;
     }
-    console.log("reward denom", reward, denom)
     const denomenator = balanceCurrency * collatDenomPrice;
     let apy = '0.00%';
 
@@ -156,7 +155,6 @@ const setApyByDenom = (siteData,  cssIds, denoms) => {
     }
     const cssId = cssIds[denom]['apy'];
     setDisplayValueById(cssId, apy)
-    console.log(apy)
   }
 };
 
@@ -175,7 +173,6 @@ const getTotalValues = (denoms, prices, coins) => {
 
 const setApyValue = (denom, cssId, apyByDenom) => {
   const denomApy = apyByDenom[denom] ? apyByDenom[denom].apy : formatPercentage(0);
-  // document.getElementById(cssId).innerHTML = denomApy;
 };
 
 const setTotalAssetValue = (totalBalancesUsd) => {
@@ -183,7 +180,6 @@ const setTotalAssetValue = (totalBalancesUsd) => {
   for (const coin in totalBalancesUsd) {
     totalAssetValue += Number(totalBalancesUsd[coin].amount)
   }
-  // document.getElementById("TAV").innerHTML = usdFormatter.format(totalAssetValue);
 }
 
 const getTotalHardAvailable = async (hardData) => {
@@ -225,8 +221,6 @@ const setTotalSuppliedDisplayValues = (siteData, cssIds, denoms) => {
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions']
   for (const denom of denoms) {
-    console.log("denom", denom)
-
     const suppliedHard = hardTotalSupplied[denom];
     const suppliedHardAmount = suppliedHard ? Number(suppliedHard.amount) : 0
     const cssId = cssIds[denom]['totalSupplied'];
@@ -234,7 +228,6 @@ const setTotalSuppliedDisplayValues = (siteData, cssIds, denoms) => {
 
     const usdValue = currencyValue * prices[denom].price;
     const formattedUsdValue = usdFormatter.format(usdValue)
-    console.log("formattedUsdValue", formattedUsdValue)
   }
 };
 
@@ -362,8 +355,6 @@ const updateDisplayValues = async(denoms) => {
 
   const totalSuppliedValues = await getTotalValues(denoms, siteData['prices'], siteData['hard-total-supplied']);
 
-  //  Use map to get the denoms
-
   const totalBorrowedValues = await getTotalValues(denoms, siteData['prices'], siteData['hard-total-borrowed']);
 
 
@@ -383,9 +374,6 @@ const updateDisplayValues = async(denoms) => {
   // setApyValue('btcb', 'APY-BTC', supplyApyByDenom);
   // setApyValue('xrpb', 'APY-XRP', supplyApyByDenom);
   // setApyValue('busd', 'APY-BUSD', supplyApyByDenom);
-
-
-
 
   setTotalHardDistributedDisplayValue(siteData, cssIds);
   setTotalSuppliedDisplayValues(siteData, cssIds, denoms);
