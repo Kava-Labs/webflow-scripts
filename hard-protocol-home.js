@@ -193,7 +193,7 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
     totalAssetValue += Number(currencyAmount * price)
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
-  setDisplayValueById(cssId, noDollarSign(totalAssetValueUsd))
+  setDisplayValueById(cssId, totalAssetValueUsd)
 }
 
 const setTotalHardDistributedDisplayValue = async (siteData, cssIds) => {
@@ -201,7 +201,7 @@ const setTotalHardDistributedDisplayValue = async (siteData, cssIds) => {
   const prices = siteData['prices']
   const cssId = cssIds['total-hard-dist'];
   const displayTotalHardDist = usdFormatter.format(rawTotalHardDist * prices['hard-a'].price);
-  setDisplayValueById(cssId, noDollarSign(displayTotalHardDist))
+  setDisplayValueById(cssId, displayTotalHardDist)
 }
 
 const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
