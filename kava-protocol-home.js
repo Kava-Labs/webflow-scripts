@@ -227,7 +227,6 @@ const mapTotalSupplied = async (denoms, siteData) => {
   const bep3SupplyData = siteData['bep3SupplyData'];
   const suppliedAmountData = siteData['suppliedAmounts'];
   const denomConversions = siteData['denomConversions'];
-
   for(const denom of denoms) {
     const denomPrice = siteData['prices'][denom].price;
 
@@ -335,7 +334,6 @@ const mapCssIds = (denoms) => {
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
   }
-
   return ids
 }
 
@@ -522,7 +520,6 @@ const updateDisplayValues = async (denoms) => {
 
   const totalSupplied = await mapTotalSupplied(denoms, siteData)
   siteData['totalSupplied'] = totalSupplied;
-
 
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)

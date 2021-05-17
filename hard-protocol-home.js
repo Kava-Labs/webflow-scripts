@@ -2,169 +2,90 @@ const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
 const BASE_URL = "https://api.kava.io";
 
-var usdFormatter = new Intl.NumberFormat('en-US', {
+const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
 
-const KAVA_DENOM = "ukava";
-const HARD_DENOM = "hard";
-const USDX_DENOM = "usdx";
-const BNB_DENOM = "bnb";
-const BTC_DENOM = 'btcb';
-const XRP_DENOM = 'xrpb';
-const BUSD_DENOM = 'busd';
+const isKavaNativeAsset = (denom) => {
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(denom)
+}
 
-const denomConversions = {
-  usdx: FACTOR_SIX,
-  ukava: FACTOR_SIX,
-  hard: FACTOR_SIX,
-  bnb: FACTOR_EIGHT,
-  btcb: FACTOR_EIGHT,
-  xrpb: FACTOR_EIGHT,
-  busd: FACTOR_EIGHT
-};
+const setConversionFactors = (denoms) => {
+  const denomConversions = {}
+  for (const denom of denoms) {
+    if (isKavaNativeAsset(denom)) {
+      denomConversions[denom] = FACTOR_SIX
+    } else {
+      denomConversions[denom] = FACTOR_EIGHT
+    }
+  }
+  return denomConversions;
+}
 
-function isEmpty(obj) {
-  return obj && Object.keys(obj).length === 0 && obj.constructor === Object
+const noDollarSign = (value) => {
+  return value.slice(1, value.length);
+}
+
+const formatCssId = (value, denom) => {
+  let displayDenom;
+  switch(denom) {
+    case 'xrpb-a':
+      displayDenom = denom.split('b-')[0]
+      break;
+    case 'ukava-a':
+      displayDenom = 'kava'
+      break;
+    default:
+      displayDenom = denom.split('-')[0]
+      break;
+  }
+
+  return `${value}-${displayDenom}`.toUpperCase()
 }
 
 function formatCoins(coins) {
   let formattedCoins = {};
   for (const coin of coins) {
-    formattedCoins[coin.denom] = { denom: coin.denom, amount: coin.amount }
+    formattedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
   }
-  return formattedCoins
+  return formattedCoins;
 }
 
-function formatNumbers(input, fixed = 2){
-  return (Number(input).toFixed(fixed).toString()).replace(
-    /^([-+]?)(0?)(\d+)(.?)(\d+)$/g, function(match, sign, zeros, before, decimal, after) {
-      var reverseString = function(string) { return string.split('').reverse().join(''); };
-      var insertCommas  = function(string) {
-        var reversed           = reverseString(string);
-        var reversedWithCommas = reversed.match(/.{1,3}/g).join(',');
-        return reverseString(reversedWithCommas);
-      };
-      return sign + (decimal ? insertCommas(before) + decimal + after : insertCommas(before + after));
-    }
-  );
-};
-
-var formatPercentage = (value) => {
+const formatPercentage = (value) => {
   return value +"%"
 };
 
-var formatPrices = async (pricefeedResult) => {
-  // for now drop any of the usd:30 prices returned
-  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
-
-  let prices = {};
-  for (const price of nonThirtyPrices) {
-    const priceName = price.market_id.split(":")[0]
-
-    let name;
-    switch (priceName) {
-      case 'btc':
-        name = 'btcb';
-        break;
-      case 'kava':
-        name = 'ukava';
-        break;
-      case 'xrp':
-        name = 'xrpb';
-        break;
-      default:
-        name = priceName;
-        break;
-    }
-    prices[name] = { price: Number(price.price)}
-  }
-  return prices;
-};
-
-var getModuleBalances = async (hardAccounts) => {
+const getModuleBalances = async (hardAccounts) => {
   const hardAccountCoins = hardAccounts.find(a => a.value.name === 'hard').value.coins;
   const coins = {};
   for (const coin of hardAccountCoins) {
-    coins[coin.denom] = { denom: coin.denom, amount: coin.amount }
+    coins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
   }
   return coins;
 };
 
-var getRewardPerYearByDenom = async (hardData) => {
+const getRewardPerYearByDenom = async (siteData) => {
+  const incentiveParams = siteData['incentiveParams'];
+  const hardData = incentiveParams.hard_supply_reward_periods
   let tokensDistributedBySuppliedAssetPerYear = {};
+  const denomConversions = siteData['denomConversions'];
    for (const period of hardData) {
       const coins = {};
       for (const reward of period.rewards_per_second) {
         // 31536000 = seconds in a year
-        const coinPerYear = Number(reward.amount) * 31536000 / denomConversions[reward.denom];
+        const coinPerYear = Number(reward.amount) * 31536000 / denomConversions[commonDenomMapper(reward.denom)];
 
         const coinRewardPerYear = { denom: reward.denom, amount: String(coinPerYear) }
 
-        coins[reward.denom] = coinRewardPerYear
+        coins[commonDenomMapper(reward.denom)] = coinRewardPerYear
       }
-      tokensDistributedBySuppliedAssetPerYear[period.collateral_type] =  coins;
+      tokensDistributedBySuppliedAssetPerYear[commonDenomMapper(period.collateral_type)] =  coins;
     }
   return tokensDistributedBySuppliedAssetPerYear;
 }
 
-var setApyByDenom = (balances, prices, hardSupplyRewardsPerYearByDenom) => {
-  const apyValues = {};
-  for (const collatDenom in hardSupplyRewardsPerYearByDenom) {
-    const collatDenomPrice = prices[collatDenom].price;
-    const balanceAmount = Number(balances[collatDenom].amount)/denomConversions[collatDenom];
-    const reward = hardSupplyRewardsPerYearByDenom[collatDenom];
-
-    let numerator = 0;
-    for (const rewardDenom in reward) {
-      const denomPrice = prices[rewardDenom].price;
-      numerator += Number(reward[rewardDenom].amount) * denomPrice;
-    }
-
-    const denomentator = balanceAmount * collatDenomPrice;
-    const a = formatNumbers((numerator / denomentator) * 100);
-    const apy = formatPercentage(formatNumbers((numerator / denomentator) * 100));
-
-    apyValues[collatDenom] = { apy }
-  }
-  return apyValues;
-};
-
-var getTotalValues = (prices, coins) => {
-  let totalValues = {};
-
-  if(!isEmpty(coins)) {
-    for(const coin in coins) {
-      const supply = Number(coins[coin].amount)/denomConversions[coin];
-      const price = prices[coin].price;
-      totalValues[coin] = {denom: coin, amount: supply * Number(price) }
-    }
-  }
-  return totalValues;
-}
-
-var setTotalValue = async (denom, cssId, totalValues) => {
-  const denomValue = totalValues[denom] ? totalValues[denom].amount : 0;
-  document.getElementById(cssId).innerHTML = usdFormatter.format(denomValue);
-
-  return denomValue;
-};
-
-var setApyValue = (denom, cssId, apyByDenom) => {
-  const denomApy = apyByDenom[denom] ? apyByDenom[denom].apy : formatPercentage(0);
-  document.getElementById(cssId).innerHTML = denomApy;
-};
-
-var setTotalAssetValue = (totalBalancesUsd) => {
-  let totalAssetValue = 0;
-  for (const coin in totalBalancesUsd) {
-    totalAssetValue += Number(totalBalancesUsd[coin].amount)
-  }
-  document.getElementById("TAV").innerHTML = usdFormatter.format(totalAssetValue);
-}
-
-var getTotalHardAvailable = async (hardData) => {
+const getTotalHardAvailable = async (hardData) => {
   let totalHardDist = 0;
   if(hardData) {
     for(const rp of hardData) {
@@ -182,10 +103,172 @@ var getTotalHardAvailable = async (hardData) => {
       totalHardDist += rewardsDistToDate;
     }
   }
-  return totalHardDist / denomConversions['hard'];
+  return totalHardDist / FACTOR_SIX;
 }
 
-var updateDisplayValues = async() => {
+const setDisplayValueById = (cssId, value) => {
+  const element = document.getElementById(cssId)
+  if (element) { element.innerHTML = value; }
+}
+
+const commonDenomMapper = (denom) => {
+  let formattedDenom;
+  switch(denom.toLowerCase()) {
+    case 'btc':
+      formattedDenom = 'btcb-a';
+      break;
+    case 'usdx':
+      formattedDenom = denom;
+      break;
+    case 'kava':
+      formattedDenom = 'ukava-a';
+      break;
+    case 'xrp':
+      formattedDenom = 'xrpb-a';
+      break;
+    default:
+      formattedDenom = denom + '-a';
+      break;
+  }
+  return formattedDenom
+}
+
+const mapPrices = async (denoms, pricefeedResult) => {
+  // for now drop any of the usd:30 prices returned
+  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
+  let prices = {};
+
+  let mappedPrices = {};
+  for (const price of nonThirtyPrices) {
+    const priceName = price.market_id.split(":")[0]
+    mappedPrices[commonDenomMapper(priceName)] = { price: Number(price.price)}
+
+    // hbtc doesn't have it's own price, it just uses btc's price
+    if (commonDenomMapper(priceName) === 'btcb-a') {
+      mappedPrices['hbtc-a'] = { price: Number(price.price)}
+    }
+  }
+
+  for ( const denom of denoms) {
+    let mappedPrice = mappedPrices[denom]
+    let price = { price: 0 }
+
+    if(mappedPrice) {
+      price = { price: mappedPrice.price }
+    }
+    prices[denom] = price
+  }
+  return prices;
+};
+
+const mapCssIds = (denoms) => {
+  let ids = {}
+  // total asset value
+  ids['TAV'] = 'TAV'
+
+  // total HARD Distributed
+  ids['total-hard-dist'] = 'TOTAL-HARD-DISTRIBUTED'
+
+  // for the market overview table
+  for (const denom of denoms) {
+    ids[denom] = {};
+    ids[denom].totalBorrowed = formatCssId('tb', denom)
+    ids[denom].totalSupplied = formatCssId('tl', denom)
+    ids[denom].apy = formatCssId('apy', denom)
+  }
+  return ids
+}
+
+const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
+  const cssId = cssIds['TAV'];
+  const balances = siteData['hardAccount']
+  const prices = siteData['prices']
+  const denomConversions = siteData['denomConversions']
+
+
+  let totalAssetValue = 0;
+  for (const coin in balances) {
+    const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
+    const price = prices[coin].price;
+    totalAssetValue += Number(currencyAmount * price)
+  }
+  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+  setDisplayValueById(cssId, totalAssetValueUsd)
+}
+
+const setTotalHardDistributedDisplayValue = async (siteData, cssIds) => {
+  const rawTotalHardDist = siteData["totalHardSupplyRewardsDistributed"] + siteData["totalHardBorrowRewardsDistributed"];
+  const prices = siteData['prices']
+  const cssId = cssIds['total-hard-dist'];
+  const displayTotalHardDist = usdFormatter.format(rawTotalHardDist * prices['hard-a'].price);
+  setDisplayValueById(cssId, displayTotalHardDist)
+}
+
+const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
+  const hardTotalSupplied = siteData['hardTotalSupplied'];
+  const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions']
+  for (const denom of denoms) {
+    const suppliedHard = hardTotalSupplied[denom];
+    const suppliedHardAmount = suppliedHard ? Number(suppliedHard.amount) : 0
+    const cssId = cssIds[denom]['totalSupplied'];
+    const currencyValue = suppliedHardAmount / denomConversions[denom];
+
+    const usdValue = currencyValue * prices[denom].price;
+    const formattedUsdValue = usdFormatter.format(usdValue)
+    setDisplayValueById(cssId, formattedUsdValue)
+  }
+};
+
+const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
+  const hardTotalBorrowed = siteData['hardTotalBorrowed'];
+  const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions']
+  for (const denom of denoms) {
+    const borrowedHard = hardTotalBorrowed[denom];
+    const borrowedHardAmount = borrowedHard ? Number(borrowedHard.amount) : 0
+    const cssId = cssIds[denom]['totalBorrowed'];
+    const currencyValue = borrowedHardAmount / denomConversions[denom];
+
+    const usdValue = currencyValue * prices[denom].price;
+    const formattedUsdValue = usdFormatter.format(usdValue)
+    setDisplayValueById(cssId, formattedUsdValue)
+  }
+};
+
+const setApyDiplayValues = async (denoms, siteData, cssIds) => {
+  const hardSupplyRewardsPerYearByDenom = siteData['hardSupplyRewardsPerYearByDenom']
+  const balances = siteData['hardTotalSupplied'];
+  const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions'];
+  for (const denom of denoms) {
+    const collatDenomPrice = prices[denom].price;
+    let balanceAmount = 0;
+    if (balances[denom]) {
+      balanceAmount= Number(balances[denom].amount)
+    }
+    const balanceCurrency = balanceAmount / denomConversions[denom];
+    const reward = hardSupplyRewardsPerYearByDenom[denom];
+
+    let numerator = 0;
+    for (const rewardDenom in reward) {
+      const denomPrice = prices[rewardDenom].price;
+      numerator += Number(reward[rewardDenom].amount) * denomPrice;
+    }
+    const denomenator = balanceCurrency * collatDenomPrice;
+    let apy = '0.00%';
+
+    if (denomenator !==0) {
+      // use usdFormatter to truncate to 2 decimals and round
+      const apyWithDollarSign = usdFormatter.format((numerator / denomenator) * 100);
+      apy = formatPercentage(noDollarSign(apyWithDollarSign));
+    }
+    const cssId = cssIds[denom]['apy'];
+    setDisplayValueById(cssId, apy)
+  }
+};
+
+const updateDisplayValues = async(denoms) => {
   const [
     pricefeedResponse,
     hardAccountResponse,
@@ -199,64 +282,67 @@ var updateDisplayValues = async() => {
     fetch(`${BASE_URL}/hard/total-borrowed`),
     fetch(`${BASE_URL}/incentive/parameters`)
   ]);
+
+  let siteData = {}
+  const cssIds = mapCssIds(denoms)
+
   const pricefeedPrices = await pricefeedResponse.json()
   const hardAccountJson = await hardAccountResponse.json()
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json()
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json()
   const incentiveParamsJson = await incentiveParametersResponse.json()
 
-  const prices = await formatPrices(pricefeedPrices.result);
-  const hardAccounts = await hardAccountJson.result;
-  const hardTotalSupplied = await hardTotalSuppliedJson.result;
-  const hardTotalBorrowed = await hardTotalBorrowedJson.result;
+//  Feed this into siteData
+  const prices = await mapPrices(denoms, pricefeedPrices.result);
+  siteData['prices'] = prices;
+
+  const denomConversions = setConversionFactors(denoms)
+  siteData['denomConversions'] = denomConversions;
+
+  const hardAccount = await getModuleBalances(hardAccountJson.result);
+  siteData['hardAccount'] = hardAccount;
+
+  const hardTotalSupplied = formatCoins(hardTotalSuppliedJson.result);
+  siteData['hardTotalSupplied'] = hardTotalSupplied;
+
+  const hardTotalBorrowed = formatCoins(hardTotalBorrowedJson.result);
+  siteData['hardTotalBorrowed'] = hardTotalBorrowed;
+
   const incentiveParams = await incentiveParamsJson.result;
+  siteData['incentiveParams'] = incentiveParams;
 
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
+  siteData["totalHardSupplyRewardsDistributed"] = rawTotalHardSupplyDist;
+
   const rawTotalHardBorrowDist = await getTotalHardAvailable(incentiveParams.hard_borrow_reward_periods);
-  const rawTotalHardDist = rawTotalHardSupplyDist + rawTotalHardBorrowDist;
+  siteData["totalHardBorrowRewardsDistributed"] = rawTotalHardBorrowDist;
 
-  const displayTotalHardDist = usdFormatter.format(rawTotalHardDist * prices['hard'].price);
-  const totalHardDistUSDValue = displayTotalHardDist.slice(0, displayTotalHardDist.length);
-  document.getElementById("total-hard-dist").innerHTML = totalHardDistUSDValue;
+  const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
+  siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
 
-  const totalSuppliedValues = await getTotalValues(prices, formatCoins(hardTotalSupplied));
-  await setTotalValue(BNB_DENOM, 'TL-BNB', totalSuppliedValues);
-  await setTotalValue(KAVA_DENOM, 'TL-KAVA', totalSuppliedValues);
-  await setTotalValue(USDX_DENOM, 'TL-USDX', totalSuppliedValues);
-  await setTotalValue(HARD_DENOM, 'TL-HARD', totalSuppliedValues);
-  await setTotalValue(BTC_DENOM, 'TL-BTC', totalSuppliedValues);
-  await setTotalValue(BUSD_DENOM, 'TL-BUSD', totalSuppliedValues);
-  await setTotalValue(XRP_DENOM, 'TL-XRP', totalSuppliedValues);
-
-  const totalBorrowedValues = await getTotalValues(prices, formatCoins(hardTotalBorrowed));
-  await setTotalValue(BUSD_DENOM, 'TB-BUSD', totalBorrowedValues);
-
-  const balances = await getModuleBalances(hardAccounts)
-  const totalBalancesUsd = await getTotalValues(prices, balances);
-  setTotalAssetValue(totalBalancesUsd)
-
-  const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(incentiveParams.hard_supply_reward_periods);
-
-  const supplyApyByDenom = setApyByDenom(formatCoins(hardTotalSupplied), prices, hardSupplyRewardsPerYearByDenom);
-  setApyValue('bnb', 'APY-BNB', supplyApyByDenom);
-  setApyValue('hard', 'APY-HARD', supplyApyByDenom);
-  setApyValue('ukava', 'APY-KAVA', supplyApyByDenom);
-  setApyValue('usdx', 'APY-USDX', supplyApyByDenom);
-  setApyValue('btcb', 'APY-BTC', supplyApyByDenom);
-  setApyValue('xrpb', 'APY-XRP', supplyApyByDenom);
-  setApyValue('busd', 'APY-BUSD', supplyApyByDenom);
+  // set display values in ui
+  await setTotalAssetValueDisplayValue(siteData, cssIds)
+  await setTotalHardDistributedDisplayValue(siteData, cssIds);
+  await setTotalSuppliedDisplayValues(denoms, siteData, cssIds);
+  await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
+  await setApyDiplayValues(denoms, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
   $(".api-metric").css({"display": "block", "text-align": "center"})
 }
 
-var main = async () => {
-  await updateDisplayValues();
+const main = async () => {
+  const denoms = [
+    'bnb-a', 'btcb-a', 'busd-a',
+    'xrpb-a', 'hard-a', 'usdx',
+    'ukava-a'
+  ]
+  await updateDisplayValues(denoms);
   await sleep(30000);
-  main()
+  main();
 }
 
-var sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
+const sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); };
 
 main();
