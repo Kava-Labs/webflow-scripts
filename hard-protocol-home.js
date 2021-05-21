@@ -85,6 +85,15 @@ const getRewardPerYearByDenom = async (siteData) => {
   return tokensDistributedBySuppliedAssetPerYear;
 }
 
+const getSupplyApyPerYearByDenom = async (siteData) => {
+  const interestRates = siteData['interestRates'];
+  const supplyApys = {};
+  for (const interestRate of interestRates) {
+    supplyApys[interestRate['denom']] = interestRate['supply_interest_rate'];
+  }
+  return supplyApys;
+};
+
 const getTotalHardAvailable = async (hardData) => {
   let totalHardDist = 0;
   if(hardData) {
@@ -174,7 +183,8 @@ const mapCssIds = (denoms) => {
     ids[denom] = {};
     ids[denom].totalBorrowed = formatCssId('tb', denom)
     ids[denom].totalSupplied = formatCssId('tl', denom)
-    ids[denom].apy = formatCssId('apy', denom)
+    ids[denom].rewardApy = formatCssId('rapy', denom)
+    ids[denom].supplyApy = formatCssId('sapy', denom)
   }
   return ids
 }
@@ -236,7 +246,7 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
   }
 };
 
-const setApyDiplayValues = async (denoms, siteData, cssIds) => {
+const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
   const hardSupplyRewardsPerYearByDenom = siteData['hardSupplyRewardsPerYearByDenom']
   const balances = siteData['hardTotalSupplied'];
   const prices = siteData['prices'];
@@ -255,15 +265,29 @@ const setApyDiplayValues = async (denoms, siteData, cssIds) => {
       const denomPrice = prices[rewardDenom].price;
       numerator += Number(reward[rewardDenom].amount) * denomPrice;
     }
-    const denomenator = balanceCurrency * collatDenomPrice;
+    const denominator = balanceCurrency * collatDenomPrice;
     let apy = '0.00%';
 
-    if (denomenator !==0) {
+    if (denominator !==0) {
       // use usdFormatter to truncate to 2 decimals and round
-      const apyWithDollarSign = usdFormatter.format((numerator / denomenator) * 100);
+      const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
-    const cssId = cssIds[denom]['apy'];
+    const cssId = cssIds[denom]['rapy'];
+    setDisplayValueById(cssId, apy)
+  }
+};
+
+const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
+  const interestRates = siteData['supplyApyByDenom'];
+  for (const denom of denoms) {
+    let apy = '0.00%';
+    for (const interestRate in interestRates) {
+      if (interestRate) {
+        apy = interestRates[interestRate]
+      }
+    }
+    const cssId = cssIds[denom]['sapy'];
     setDisplayValueById(cssId, apy)
   }
 };
@@ -274,13 +298,15 @@ const updateDisplayValues = async(denoms) => {
     hardAccountResponse,
     hardTotalSuppliedResponse,
     hardTotalBorrowedResponse,
-    incentiveParametersResponse
+    incentiveParametersResponse,
+    hardInterestRatesResponse
   ] = await Promise.all([
     fetch(`${BASE_URL}/pricefeed/prices`),
     fetch(`${BASE_URL}/hard/accounts`),
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(`${BASE_URL}/hard/total-borrowed`),
-    fetch(`${BASE_URL}/incentive/parameters`)
+    fetch(`${BASE_URL}/incentive/parameters`),
+    fetch(`${BASE_URL}/hard/interest-rate`)
   ]);
 
   let siteData = {}
@@ -291,6 +317,7 @@ const updateDisplayValues = async(denoms) => {
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json()
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json()
   const incentiveParamsJson = await incentiveParametersResponse.json()
+  const hardInterestRateJson = await hardInterestRatesResponse.json()
 
 //  Feed this into siteData
   const prices = await mapPrices(denoms, pricefeedPrices.result);
@@ -311,6 +338,9 @@ const updateDisplayValues = async(denoms) => {
   const incentiveParams = await incentiveParamsJson.result;
   siteData['incentiveParams'] = incentiveParams;
 
+  const interestRates = await hardInterestRateJson.result;
+  siteData['interestRates'] = interestRates;
+
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
   siteData["totalHardSupplyRewardsDistributed"] = rawTotalHardSupplyDist;
 
@@ -320,12 +350,17 @@ const updateDisplayValues = async(denoms) => {
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
 
+  const supplyApyByDenom = await getSupplyApyPerYearByDenom(siteData);
+  siteData['supplyApyByDenom'] = supplyApyByDenom;
+
+
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds)
   await setTotalHardDistributedDisplayValue(siteData, cssIds);
   await setTotalSuppliedDisplayValues(denoms, siteData, cssIds);
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
-  await setApyDiplayValues(denoms, siteData, cssIds);
+  await setRewardApyDisplayValue(denoms, siteData, cssIds);
+  await setSupplyApyDisplayValue(denoms, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
