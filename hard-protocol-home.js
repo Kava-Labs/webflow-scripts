@@ -272,7 +272,7 @@ const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
       const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
-    const cssId = cssIds[denom]['rapy'];
+    const cssId = cssIds[denom].rewardApy;
     setDisplayValueById(cssId, apy)
   }
 };
@@ -281,7 +281,7 @@ const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
   const interestRates = siteData['interestRates'];
   for (const denom of denoms) {
       const apy = interestRates[denom] ? interestRates[denom] : '0.00' ;
-      const cssId = cssIds[denom]['sapy'];
+      const cssId = cssIds[denom].supplyApy;
       const formattedAPY = formatPercentage(noDollarSign(usdFormatter.format(apy)));
       setDisplayValueById(cssId, formattedAPY);
   }
