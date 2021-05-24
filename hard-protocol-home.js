@@ -85,11 +85,11 @@ const getRewardPerYearByDenom = async (siteData) => {
   return tokensDistributedBySuppliedAssetPerYear;
 }
 
-const getSupplyApyPerYearByDenom = async (siteData) => {
+const mapHardSupplyInterestRates = async (siteData) => {
   const interestRates = siteData['interestRates'];
   const supplyApys = {};
   for (const interestRate of interestRates) {
-    supplyApys[interestRate['denom']] = interestRate['supply_interest_rate'];
+    supplyApys[interestRate[commonDenomMapper(denom)]] = interestRate['supply_interest_rate'];
   }
   return supplyApys;
 };
@@ -279,16 +279,15 @@ const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
 };
 
 const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
-  const interestRates = siteData['supplyApyByDenom'];
+  const interestRates = siteData['interestRates'];
   for (const denom of denoms) {
-    let apy = '0.00%';
-    for (const interestRate in interestRates) {
-      if (interestRate) {
-        apy = interestRates[interestRate]
-      }
-    }
-    const cssId = cssIds[denom]['sapy'];
-    setDisplayValueById(cssId, apy)
+      // get interest rate if it exists, else set it to 0.00
+      const apy = interestRates[denom] ? interestRates[denom] : '0.00' ;
+      // get cssId
+      const cssId = cssIds[denom]['sapy'];
+      // format the apy value. usdFormatter adds commas and rounding
+      const formattedAPY = formatPercentage(noDollarSign(usdFormatter.format(apy)));
+      setDisplayValueById(cssId, formattedAPY);
   }
 };
 
@@ -338,7 +337,7 @@ const updateDisplayValues = async(denoms) => {
   const incentiveParams = await incentiveParamsJson.result;
   siteData['incentiveParams'] = incentiveParams;
 
-  const interestRates = await hardInterestRateJson.result;
+  const interestRates = await mapHardSupplyInterestRates(hardInterestRateJson.result);
   siteData['interestRates'] = interestRates;
 
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
@@ -349,10 +348,6 @@ const updateDisplayValues = async(denoms) => {
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
-
-  const supplyApyByDenom = await getSupplyApyPerYearByDenom(siteData);
-  siteData['supplyApyByDenom'] = supplyApyByDenom;
-
 
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds)
