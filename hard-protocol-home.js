@@ -280,10 +280,10 @@ const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
 const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
   const interestRates = siteData['interestRates'];
   for (const denom of denoms) {
-      const apy = interestRates[denom] ? interestRates[denom] : '0.00' ;
-      const cssId = cssIds[denom].supplyApy;
-      const formattedAPY = formatPercentage(noDollarSign(usdFormatter.format(apy)));
-      setDisplayValueById(cssId, formattedAPY);
+    const apy = interestRates[denom] ? interestRates[denom] : '0.00' ;
+    const cssId = cssIds[denom].supplyApy;
+    const formattedAPY = formatPercentage((noDollarSign(apy) * 100).toFixed(2));
+    setDisplayValueById(cssId, formattedAPY);
   }
 };
 
