@@ -33,6 +33,12 @@ const displayInMillions = (value) => {
   return valueInMilUsd + "M";
 }
 
+const displayInThousands = (value) => {
+  const valueInK = value/Number(10 ** 3);
+  const valueInKUsd = usdFormatter.format(valueInK);
+  return valueInKUsd + "K";
+}
+
 const formatCssId = (value, denom) => {
   let displayDenom;
   switch(denom) {
@@ -246,8 +252,8 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = borrowedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const formattedUsdValue = usdFormatter.format(usdValue);
-    setDisplayValueById(cssId, formattedUsdValue);
+    const denomTotalSupplied = displayInThousands(usdValue);
+    setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
 
