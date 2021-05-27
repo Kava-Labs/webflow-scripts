@@ -27,6 +27,12 @@ const noDollarSign = (value) => {
   return value.slice(1, value.length);
 }
 
+const displayInMillions = (value) => {
+  const valueInMil = value/FACTOR_SIX;
+  const valueInMilUsd = usdFormatter.format(valueInMil);
+  return valueInMilUsd + "M";
+}
+
 const formatCssId = (value, denom) => {
   let displayDenom;
   switch(denom) {
@@ -224,8 +230,8 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = suppliedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const formattedUsdValue = usdFormatter.format(usdValue);
-    setDisplayValueById(cssId, formattedUsdValue);
+    const denomTotalSupplied = displayInMillions(usdValue);
+    setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
 
@@ -344,6 +350,8 @@ const updateDisplayValues = async(denoms) => {
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
+
+  console.log(siteData)
 
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds);
