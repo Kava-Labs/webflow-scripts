@@ -27,6 +27,18 @@ const noDollarSign = (value) => {
   return value.slice(1, value.length);
 }
 
+const displayInMillions = (value) => {
+  const valueInMil = value/FACTOR_SIX;
+  const valueInMilUsd = usdFormatter.format(valueInMil);
+  return valueInMilUsd + "M";
+}
+
+const displayInThousands = (value) => {
+  const valueInK = value/Number(10 ** 3);
+  const valueInKUsd = usdFormatter.format(valueInK);
+  return valueInKUsd + "K";
+}
+
 const formatCssId = (value, denom) => {
   let displayDenom;
   switch(denom) {
@@ -224,8 +236,8 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = suppliedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const formattedUsdValue = usdFormatter.format(usdValue);
-    setDisplayValueById(cssId, formattedUsdValue);
+    const denomTotalSupplied = displayInMillions(usdValue);
+    setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
 
@@ -240,8 +252,8 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = borrowedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const formattedUsdValue = usdFormatter.format(usdValue);
-    setDisplayValueById(cssId, formattedUsdValue);
+    const denomTotalSupplied = usdValue >= 10 ** 6 ? displayInMillions(usdValue) : displayInThousands(usdValue);
+    setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
 
