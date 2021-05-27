@@ -252,7 +252,7 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = borrowedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const denomTotalSupplied = displayInThousands(usdValue);
+    const denomTotalSupplied = usdValue >= 10 ** 6 ? displayInMillions(usdValue) : displayInThousands(usdValue);
     setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
