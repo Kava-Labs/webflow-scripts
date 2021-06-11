@@ -319,7 +319,7 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
   return coins;
 }
 
-const mapCdpParams = async (denoms, cdpParamsData) => {
+const mapCdpInterestRates = async (denoms, cdpParamsData) => {
   const coins = {};
 
   const mappedStabilityFees = {};
@@ -459,10 +459,8 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
   const cdpInterestRate = siteData['cdpInterestRate'];
 
   for (const denom of denoms) {
-    console.log(denom)
     const borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
     const cssId = cssIds[denom]['cdpInterestRate'];
-    console.log(cssId)
     setDisplayValueById(cssId, borrowApy + "%")
   }
 };
@@ -552,8 +550,8 @@ const updateDisplayValues = async (denoms) => {
   const totalSupplied = await mapTotalSupplied(denoms, siteData)
   siteData['totalSupplied'] = totalSupplied;
 
-  const cdpInterestRate = await mapCdpParams(denoms, cdpParamsJson.result);
-  siteData['cdpInterestRate'] = cdpInterestRate
+  const cdpInterestRate = await mapCdpInterestRates(denoms, cdpParamsJson.result);
+  siteData['cdpInterestRate'] = cdpInterestRate;
 
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
@@ -568,8 +566,6 @@ const updateDisplayValues = async (denoms) => {
 
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
-  console.log(siteData)
-  console.log(cssIds)
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
