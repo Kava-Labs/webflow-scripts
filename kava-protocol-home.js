@@ -341,7 +341,7 @@ const mapCssIds = (denoms) => {
     ids[denom].totalBorrowed = formatCssId('tb', denom)
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
-    ids[denom].borrowApys = formatCssId('bapy', denom)
+    ids[denom].borrowApy = formatCssId('bapy', denom)
   }
   return ids
 }
@@ -502,7 +502,6 @@ const updateDisplayValues = async (denoms) => {
 
   let siteData = {}
   const cssIds = mapCssIds(denoms)
-  console.log(cssIds)
 
   const denomConversions = setConversionFactors(denoms)
   siteData['denomConversions'] = denomConversions;
