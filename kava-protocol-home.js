@@ -319,6 +319,14 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
   return coins;
 }
 
+const mapHardBorrowInterestRates = async (interestRates) => {
+  const borrowApys = {};
+  for (const interestRate of interestRates) {
+    borrowApys[commonDenomMapper(interestRate['denom'])] = interestRate['borrow_interest_rate'];
+  }
+  return borrowApys;
+};
+
 const mapCssIds = (denoms) => {
   let ids = {}
   // total asset value
@@ -333,6 +341,7 @@ const mapCssIds = (denoms) => {
     ids[denom].totalBorrowed = formatCssId('tb', denom)
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
+    ids[denom].borrowApys = formatCssId('bapy', denom)
   }
   return ids
 }
@@ -449,7 +458,8 @@ const updateDisplayValues = async (denoms) => {
     bnbCdpResponse,
     kavaCdpResponse,
     hardCdpResponse,
-    hbtcCdpResponse
+    hbtcCdpResponse,
+    hardInterestRatesResponse
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
@@ -463,6 +473,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BASE_URL + '/cdp/cdps/collateralType/ukava-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
+    fetch(`${BASE_URL}/hard/interest-rate`)
   ]);
   const pricefeedPrices = await pricefeedResponse.json()
 
@@ -477,6 +488,7 @@ const updateDisplayValues = async (denoms) => {
   const ukavaPlatformAmountsJson = await kavaCdpResponse.json();
   const hardPlatformAmountsJson = await hardCdpResponse.json();
   const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
+  const hardInterestRateJson = await hardInterestRatesResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -490,6 +502,7 @@ const updateDisplayValues = async (denoms) => {
 
   let siteData = {}
   const cssIds = mapCssIds(denoms)
+  console.log(cssIds)
 
   const denomConversions = setConversionFactors(denoms)
   siteData['denomConversions'] = denomConversions;
@@ -520,6 +533,9 @@ const updateDisplayValues = async (denoms) => {
 
   const totalSupplied = await mapTotalSupplied(denoms, siteData)
   siteData['totalSupplied'] = totalSupplied;
+
+  const borrowApy = await mapHardBorrowInterestRates(hardInterestRateJson.result);
+  siteData['borrowApy'] = borrowApy;
 
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
