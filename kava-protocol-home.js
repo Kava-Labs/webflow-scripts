@@ -460,7 +460,7 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
-    const desktopCssId = cssIds[denom]['borrowApy'];
+    const desktopCssId = cssIds[denom]['BAPY'];
     setDisplayValueById(desktopCssId, borrowApy + "%")
   }
 };
@@ -566,6 +566,7 @@ const updateDisplayValues = async (denoms) => {
 
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
+  console.log(cssIds)
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
