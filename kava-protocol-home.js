@@ -460,7 +460,7 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
-    const desktopCssId = cssIds[denom]['BAPY'];
+    const desktopCssId = cssIds[denom]['bapy'];
     setDisplayValueById(desktopCssId, borrowApy + "%")
   }
 };
