@@ -369,6 +369,7 @@ const mapCssIds = (denoms) => {
     ids[denom].totalBorrowed = formatCssId('tb', denom)
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
+    ids[denom].cdpInterestRate = formatCssId('bapy', denom)
   }
   return ids
 }
@@ -569,8 +570,6 @@ const updateDisplayValues = async (denoms) => {
 
   const cdpInterestRate = await mapCdpParams(denoms, cdpParamsJson.result);
   siteData['cdpInterestRate'] = cdpInterestRate
-
-  console.log(siteData)
 
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
