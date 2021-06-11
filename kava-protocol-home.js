@@ -445,6 +445,16 @@ const setDisplayValueById = (cssId, value) => {
   if (element) { element.innerHTML = value; }
 }
 
+const setBorrowApyDisplayValues = (denoms, siteData, cssIds) => {
+  const interestRates = siteData['borrowApy'];
+  for (const denom of denoms) {
+    const apy = interestRates[denom] ? interestRates[denom] : '0.00' ;
+    const cssId = cssIds[denom].borrowApy;
+    const formattedAPY = formatPercentage((noDollarSign(apy) * 100).toFixed(2));
+    setDisplayValueById(cssId, formattedAPY);
+  }
+};
+
 const updateDisplayValues = async (denoms) => {
   const [
     pricefeedResponse,
@@ -546,6 +556,8 @@ const updateDisplayValues = async (denoms) => {
   await setRewardsApyDisplayValues(denoms, siteData, cssIds)
 
   await setTotalAssetDisplayValue(siteData, cssIds)
+
+  await setBorrowApyDisplayValues(denoms, siteData, cssIds)
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
