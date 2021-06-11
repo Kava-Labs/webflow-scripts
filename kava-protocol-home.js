@@ -322,35 +322,17 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
 const mapCdpParams = async (denoms, cdpParamsData) => {
   const coins = {};
 
-  const mappedLimits = {};
   const mappedStabilityFees = {};
-  let usdxDebtLimit = 0;
   if(cdpParamsData) {
     for (const denom of cdpParamsData.collateral_params) {
-
-      const debtLimit = denom.debt_limit ? Number(denom.debt_limit.amount)/FACTOR_SIX : 0;
-      mappedLimits[denom.type] = { debtLimit }
-
       const secondsPerYear = 31536000;
       const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
       mappedStabilityFees[denom.type] = stabilityFeePercentage
     }
-
-    usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
   }
 
   for (const denom of denoms) {
-    let limit = 0;
-    let stabilityFee = ' ';
-
-    if (denom === 'usdx') {
-      limit = usdxDebtLimit
-    } else {
-      let cdpParam = mappedLimits[denom]
-      if(cdpParam) { limit = cdpParam.debtLimit }
-    }
-
-    coins[denom] = { debtLimit: limit, stabilityFeePercentage: mappedStabilityFees[denom] }
+    coins[denom] = { stabilityFeePercentage: mappedStabilityFees[denom] }
   }
   return coins;
 };
