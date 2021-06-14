@@ -319,6 +319,24 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
   return coins;
 }
 
+const mapCdpInterestRates = async (denoms, cdpParamsData) => {
+  const coins = {};
+
+  const mappedStabilityFees = {};
+  if(cdpParamsData) {
+    for (const denom of cdpParamsData.collateral_params) {
+      const secondsPerYear = 31536000;
+      const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
+      mappedStabilityFees[denom.type] = stabilityFeePercentage
+    }
+  }
+
+  for (const denom of denoms) {
+    coins[denom] = { stabilityFeePercentage: mappedStabilityFees[denom] }
+  }
+  return coins;
+};
+
 const mapCssIds = (denoms) => {
   let ids = {}
   // total asset value
@@ -333,6 +351,7 @@ const mapCssIds = (denoms) => {
     ids[denom].totalBorrowed = formatCssId('tb', denom)
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
+    ids[denom].cdpInterestRate = formatCssId('bapy', denom)
   }
   return ids
 }
@@ -436,6 +455,16 @@ const setDisplayValueById = (cssId, value) => {
   if (element) { element.innerHTML = value; }
 }
 
+const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
+  const cdpInterestRate = siteData['cdpInterestRate'];
+
+  for (const denom of denoms) {
+    const borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
+    const cssId = cssIds[denom]['cdpInterestRate'];
+    setDisplayValueById(cssId, borrowApy + "%")
+  }
+};
+
 const updateDisplayValues = async (denoms) => {
   const [
     pricefeedResponse,
@@ -521,6 +550,9 @@ const updateDisplayValues = async (denoms) => {
   const totalSupplied = await mapTotalSupplied(denoms, siteData)
   siteData['totalSupplied'] = totalSupplied;
 
+  const cdpInterestRate = await mapCdpInterestRates(denoms, cdpParamsJson.result);
+  siteData['cdpInterestRate'] = cdpInterestRate;
+
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
@@ -531,6 +563,8 @@ const updateDisplayValues = async (denoms) => {
   await setRewardsApyDisplayValues(denoms, siteData, cssIds)
 
   await setTotalAssetDisplayValue(siteData, cssIds)
+
+  await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
