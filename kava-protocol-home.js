@@ -411,7 +411,7 @@ const setTotalLockedDisplayValues = async (denoms, siteData, cssIds) => {
     const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
     const denomTotalSupplyValue = Number(denomTotalSupplyCoin * price);
 
-    const denomTotalLocked = displayInMillions(denomTotalSupplyValue);
+    const denomTotalLocked = denomTotalSupplyValue >= 10 ** 6 ? >= 10 ** 6 ? displayInMillions(denomTotalSupplyValue) : displayInThousands(denomTotalSupplyValue);;
     setDisplayValueById(cssId, denomTotalLocked)
   }
 }
