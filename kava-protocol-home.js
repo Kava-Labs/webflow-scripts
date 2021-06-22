@@ -524,6 +524,7 @@ const setHardRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
     const cssId = cssIds[denom].hardRewardApy;
+    console.log(cssId, apy)
     setDisplayValueById(cssId, apy)
   }
 };
@@ -686,7 +687,7 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a'
+    'ukava-a', 'usdx'
   ]
 
   await updateDisplayValues(denoms);
