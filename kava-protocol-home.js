@@ -277,32 +277,6 @@ const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   return coins;
 }
 
-// const mapHardIncentiveParams = async (denoms, hardRewardPeriods) => {
-//   debugger;
-//   let coins = {}
-//   console.log(hardRewardPeriods)
-//   let mappedParams = {}
-//   if (hardRewardPeriods) {
-//     for(const param of hardRewardPeriods) {
-//       const rewardPerSecond = param.rewards_per_second;
-//       mappedParams[param.collateral_type] = { denom: rewardPerSecond.denom, amount: Number(rewardPerSecond.amount) }
-//     }
-//   }
-//
-//   for (const denom of denoms) {
-//     let coinParams = mappedParams[denom]
-//     // empty coin with 'ukava' assumes reward type is going to be in ukava
-//     let coin = emptyCoin('ukava')
-//
-//     if(coinParams) {
-//       coin = { denom: coinParams.denom, amount: Number(coinParams.amount) }
-//     }
-//     coins[denom] = coin
-//   }
-//   console.log(coins)
-//   return coins;
-// }
-
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
   const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
@@ -524,7 +498,6 @@ const setHardRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
     const cssId = cssIds[denom].hardRewardApy;
-    console.log(cssId, apy)
     setDisplayValueById(cssId, apy)
   }
 };
@@ -672,10 +645,6 @@ const updateDisplayValues = async (denoms) => {
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
   await setHardRewardApyDisplayValue(denoms, siteData, cssIds);
-
-  console.log("siteData", siteData)
-  console.log("cssIds", cssIds)
-
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
