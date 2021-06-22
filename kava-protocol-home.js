@@ -63,6 +63,10 @@ const noDollarSign = (value) => {
   return value.slice(1, value.length);
 }
 
+const formatPercentage = (value) => {
+  return value +"%";
+};
+
 const displayInMillions = (value) => {
   const valueInMil = value/FACTOR_SIX;
   const valueInMilUsd = usdFormatter.format(valueInMil);
@@ -273,6 +277,32 @@ const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   return coins;
 }
 
+// const mapHardIncentiveParams = async (denoms, hardRewardPeriods) => {
+//   debugger;
+//   let coins = {}
+//   console.log(hardRewardPeriods)
+//   let mappedParams = {}
+//   if (hardRewardPeriods) {
+//     for(const param of hardRewardPeriods) {
+//       const rewardPerSecond = param.rewards_per_second;
+//       mappedParams[param.collateral_type] = { denom: rewardPerSecond.denom, amount: Number(rewardPerSecond.amount) }
+//     }
+//   }
+//
+//   for (const denom of denoms) {
+//     let coinParams = mappedParams[denom]
+//     // empty coin with 'ukava' assumes reward type is going to be in ukava
+//     let coin = emptyCoin('ukava')
+//
+//     if(coinParams) {
+//       coin = { denom: coinParams.denom, amount: Number(coinParams.amount) }
+//     }
+//     coins[denom] = coin
+//   }
+//   console.log(coins)
+//   return coins;
+// }
+
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
   const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
@@ -352,6 +382,7 @@ const mapCssIds = (denoms) => {
     ids[denom].totalLocked = formatCssId('tl', denom)
     ids[denom].apy = formatCssId('apy', denom)
     ids[denom].cdpInterestRate = formatCssId('bapy', denom)
+    ids[denom].hardRewardApy = formatCssId('hrapy', denom)
   }
   return ids
 }
@@ -465,6 +496,66 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
   }
 };
 
+const setHardRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
+  const hardSupplyRewardsPerYearByDenom = siteData['hardSupplyRewardsPerYearByDenom']
+  const balances = siteData['hardTotalSupplied'];
+  const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions'];
+  for (const denom of denoms) {
+    const collatDenomPrice = prices[denom].price;
+    let balanceAmount = 0;
+    if (balances[denom]) {
+      balanceAmount= Number(balances[denom].amount)
+    }
+    const balanceCurrency = balanceAmount / denomConversions[denom];
+    const reward = hardSupplyRewardsPerYearByDenom[denom];
+
+    let numerator = 0;
+    for (const rewardDenom in reward) {
+      const denomPrice = prices[rewardDenom].price;
+      numerator += Number(reward[rewardDenom].amount) * denomPrice;
+    }
+    const denominator = balanceCurrency * collatDenomPrice;
+    let apy = '0.00%';
+
+    if (denominator !==0) {
+      // use usdFormatter to truncate to 2 decimals and round
+      const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
+      apy = formatPercentage(noDollarSign(apyWithDollarSign));
+    }
+    const cssId = cssIds[denom].hardRewardApy;
+    setDisplayValueById(cssId, apy)
+  }
+};
+
+function formatCoins(coins) {
+  let formattedCoins = {};
+  for (const coin of coins) {
+    formattedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
+  }
+  return formattedCoins;
+};
+
+const getRewardPerYearByDenom = async (siteData) => {
+  const incentiveParams = siteData['hardIncentiveParams'];
+  const hardData = incentiveParams.hard_supply_reward_periods;
+  let tokensDistributedBySuppliedAssetPerYear = {};
+  const denomConversions = siteData['denomConversions'];
+  for (const period of hardData) {
+    const coins = {};
+    for (const reward of period.rewards_per_second) {
+      // 31536000 = seconds in a year
+      const coinPerYear = Number(reward.amount) * 31536000 / denomConversions[commonDenomMapper(reward.denom)];
+
+      const coinRewardPerYear = { denom: reward.denom, amount: String(coinPerYear) };
+
+      coins[commonDenomMapper(reward.denom)] = coinRewardPerYear;
+    }
+    tokensDistributedBySuppliedAssetPerYear[commonDenomMapper(period.collateral_type)] =  coins;
+  }
+  return tokensDistributedBySuppliedAssetPerYear;
+};
+
 const updateDisplayValues = async (denoms) => {
   const [
     pricefeedResponse,
@@ -478,7 +569,9 @@ const updateDisplayValues = async (denoms) => {
     bnbCdpResponse,
     kavaCdpResponse,
     hardCdpResponse,
-    hbtcCdpResponse
+    hbtcCdpResponse,
+    hardTotalSuppliedResponse,
+    // hardIncentiveParamsResponse
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
@@ -492,6 +585,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BASE_URL + '/cdp/cdps/collateralType/ukava-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
+    fetch(`${BASE_URL}/hard/total-deposited`),
   ]);
   const pricefeedPrices = await pricefeedResponse.json()
 
@@ -506,6 +600,7 @@ const updateDisplayValues = async (denoms) => {
   const ukavaPlatformAmountsJson = await kavaCdpResponse.json();
   const hardPlatformAmountsJson = await hardCdpResponse.json();
   const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
+  const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -553,6 +648,15 @@ const updateDisplayValues = async (denoms) => {
   const cdpInterestRate = await mapCdpInterestRates(denoms, cdpParamsJson.result);
   siteData['cdpInterestRate'] = cdpInterestRate;
 
+  const hardTotalSupplied = formatCoins(hardTotalSuppliedJson.result);
+  siteData['hardTotalSupplied'] = hardTotalSupplied;
+
+  const hardIncentiveParams = await incentiveParamsJson.result;
+  siteData['hardIncentiveParams'] = hardIncentiveParams;
+
+  const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
+  siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
+
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
@@ -565,6 +669,12 @@ const updateDisplayValues = async (denoms) => {
   await setTotalAssetDisplayValue(siteData, cssIds)
 
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
+
+  await setHardRewardApyDisplayValue(denoms, siteData, cssIds);
+
+  console.log("siteData", siteData)
+  console.log("cssIds", cssIds)
+
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
   $(".metric-blur").css("background-color", "transparent")
