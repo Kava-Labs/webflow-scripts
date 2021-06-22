@@ -69,6 +69,12 @@ const displayInMillions = (value) => {
   return valueInMilUsd + "M";
 }
 
+const displayInThousands = (value) => {
+  const valueInK = value/Number(10 ** 3);
+  const valueInKUsd = usdFormatter.format(valueInK);
+  return valueInKUsd + "K";
+}
+
 const isKavaNativeAsset = (denom) => {
   return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(denom)
 }
@@ -387,7 +393,7 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
     const usdxBorrowed = siteData['usdxBorrowed'][denom];
     const cssId = cssIds[denom]['totalBorrowed'];
 
-    const denomTotalBorrowed = displayInMillions(usdxBorrowed);
+    const denomTotalBorrowed = usdxBorrowed >= 10 ** 6 ? displayInMillions(usdxBorrowed) : displayInThousands(usdxBorrowed);
     setDisplayValueById(cssId, denomTotalBorrowed)
   }
 }
