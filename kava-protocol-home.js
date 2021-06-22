@@ -545,7 +545,6 @@ const updateDisplayValues = async (denoms) => {
     hardCdpResponse,
     hbtcCdpResponse,
     hardTotalSuppliedResponse,
-    // hardIncentiveParamsResponse
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
