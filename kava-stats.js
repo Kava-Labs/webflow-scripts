@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6)
 const FACTOR_EIGHT = Number(10 ** 8)
-const BASE_URL = "https://api.kava.io/";
+const BASE_URL = "https://api.internal-testnet.kava.io/";
 const BINANACE_URL = "https://api.binance.com/api/v3/"
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
