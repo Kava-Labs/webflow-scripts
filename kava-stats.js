@@ -719,7 +719,6 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
 
 const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   const defiCoinsSupply = siteData['defiCoinsSupply'];
-  // const swpSupply = siteData['supplyData']['swp'].amount
   const prices = siteData['prices'];
   const cssId = cssIds['totalMarketCap'];
 
@@ -728,10 +727,6 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   for (const denom of denoms) {
     const price = prices[denom].price
     const suppliedCoin = defiCoinsSupply[denom]
-
-    // if (denom === 'swp') {
-    //   suppliedCoin = swpSupply / FACTOR_SIX;
-    // }
 
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
@@ -945,8 +940,6 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
-
-  console.log('siteData', siteData)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
