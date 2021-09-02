@@ -506,17 +506,20 @@ const mapBep3Params = async (denoms, bep3ParamsData, siteData) => {
 }
 
 const mapSupplyAndMarket = async (denoms, siteData) => {
+  siteData['supplyData']['swp'] = siteData['suppliedAmounts']['swp'];
   const supplydata = siteData['supplyData']
   const bep3SupplyData = siteData['bep3SupplyData']
   const denomConversions = siteData['denomConversions']
 
   const coins = { }
+
   for (const denom of denoms) {
     // think we do this because of the double spend?
-    const denomTotalSupply = denom === 'bnb-a' ? bep3SupplyData[denom] : supplydata[denom].amount
+    let denomTotalSupply = denom === 'bnb-a' ? bep3SupplyData[denom] : supplydata[denom].amount
     const factor = denomConversions[denom]
 
     const denomTotalSupplyCoin = denomTotalSupply / factor
+
     coins[denom] = denomTotalSupplyCoin
   }
   return coins
@@ -718,22 +721,23 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
 }
 
 const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
-  const defiCoinsSupply = siteData['defiCoinsSupply']
-  const prices = siteData['prices']
-  const cssId = cssIds['totalMarketCap']
+  const defiCoinsSupply = siteData['defiCoinsSupply'];
+  const swpSupply = siteData['suppliedAmounts']['swp'].amount
+  const prices = siteData['prices'];
+  const cssId = cssIds['totalMarketCap'];
 
   let total = 0;
 
   for (const denom of denoms) {
     const price = prices[denom].price
-    const suppliedCoin = defiCoinsSupply[denom]
+    let suppliedCoin = defiCoinsSupply[denom]
+
     if (denom === 'swp') {
-      siteData['suppliedAmounts']['swp'].amount = suppliedCoin;
+      suppliedCoin = swpSupply;
     }
 
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
-
 
     const desktopCssId = cssIds[denom]['marketCap']['d']
     const mobileCssId = cssIds[denom]['marketCap']['m']
@@ -935,6 +939,8 @@ const updateDisplayValues = async (denoms) => {
 
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
+
+  const swpSupplyData = suppliedSwpAmount;
 
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
