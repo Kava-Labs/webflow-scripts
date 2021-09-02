@@ -733,7 +733,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
     let suppliedCoin = defiCoinsSupply[denom]
 
     if (denom === 'swp') {
-      suppliedCoin = swpSupply;
+      suppliedCoin = swpSupply / FACTOR_SIX;
     }
 
     const suppliedDenomUsd = suppliedCoin * price;
