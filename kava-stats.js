@@ -512,10 +512,9 @@ const mapSupplyAndMarket = async (denoms, siteData) => {
   const denomConversions = siteData['denomConversions']
 
   const coins = { }
-
   for (const denom of denoms) {
     // think we do this because of the double spend?
-    let denomTotalSupply = denom === 'bnb-a' ? bep3SupplyData[denom] : supplydata[denom].amount
+    const denomTotalSupply = denom === 'bnb-a' ? bep3SupplyData[denom] : supplydata[denom].amount
     const factor = denomConversions[denom]
 
     const denomTotalSupplyCoin = denomTotalSupply / factor
@@ -940,8 +939,6 @@ const updateDisplayValues = async (denoms) => {
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
 
-  const swpSupplyData = suppliedSwpAmount;
-
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
 
@@ -950,10 +947,6 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
-
-  console.log('siteData', siteData)
-
-  console.log('cssIds', cssIds)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
