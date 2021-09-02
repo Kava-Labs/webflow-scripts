@@ -506,7 +506,7 @@ const mapBep3Params = async (denoms, bep3ParamsData, siteData) => {
 }
 
 const mapSupplyAndMarket = async (denoms, siteData) => {
-  siteData['supplyData']['swp'] = siteData['suppliedAmounts']['swp'];
+  // siteData['supplyData']['swp'] = siteData['suppliedAmounts']['swp'];
   const supplydata = siteData['supplyData']
   const bep3SupplyData = siteData['bep3SupplyData']
   const denomConversions = siteData['denomConversions']
