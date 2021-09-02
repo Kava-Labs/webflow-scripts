@@ -442,7 +442,7 @@ const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   return coins;
 }
 
-const mapSuppliedAmounts = async (denoms, coins, supplyTotalJson) => {
+const mapSuppliedAmounts = (denoms, coins) => {
   let formattedCoins = {};
 
   let mappedCoins = {}
@@ -454,15 +454,14 @@ const mapSuppliedAmounts = async (denoms, coins, supplyTotalJson) => {
     let coin = emptyCoin(denom);
 
     let accountCoin = mappedCoins[denom]
-    if (denom === 'swp') {
-      const swapSuppliedAmount = supplyTotalJson.result.find(d => d.denom === 'swp').amount
-      // console.log('swapSuppliedAmount', swapSuppliedAmount)
-      accountCoin = {
-        denom: 'swp',
-        amount: swapSuppliedAmount
-      }
-    }
-    console.log('accountCoin', accountCoin)
+    // if (denom === 'swp') {
+    //   const swapSuppliedAmount = coins.find(coin => coin.denom === 'swp').amount
+    //   // console.log('swapSuppliedAmount', swapSuppliedAmount)
+    //   accountCoin = {
+    //     denom: 'swp',
+    //     amount: swapSuppliedAmount
+    //   }
+    // }
 
     if(accountCoin) {
       coin = { denom: commonDenomMapper(accountCoin.denom), amount: Number(accountCoin.amount) }
@@ -537,8 +536,8 @@ const mapUsdxMarketData = async (usdxMarketJson) => {
   return usdxMarketJson.market_data.price_change_percentage_24h
 }
 
-const setSwpSupplyAmount = async (swpMarketDataJson) => {
-  const swpSupplyAmount = Number(swpMarketDataJson.result.coins.find(coin => coin.denom === 'swp').amount);
+const setSwpSupplyAmount = async (supplyTotalJson) => {
+  const swpSupplyAmount = Number(supplyTotalJson.result.find(coin => coin.denom === 'swp').amount);
 
   return {
     denom: 'swp',
@@ -936,17 +935,17 @@ const updateDisplayValues = async (denoms) => {
   const usdxBorrowed = await mapUsdxBorrowed(denoms, siteData)
   siteData['usdxBorrowed'] = usdxBorrowed;
 
-  const suppliedAmounts = await mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins, supplyTotalJson);
+  const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
   siteData['suppliedAmounts'] = suppliedAmounts;
-
-  // const suppliedSwpAmount = await setSwpSupplyAmount(swpMarketDataJson);
-  // siteData['suppliedAmounts']['swp'] = suppliedSwpAmount;
 
   const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData)
   siteData['totalSuppliedData'] = totalSuppliedData;
 
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
+
+  const suppliedSwpAmount = await setSwpSupplyAmount(supplyTotalJson);
+  siteData['supplyData']['swp'] = suppliedSwpAmount;
 
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
@@ -956,9 +955,6 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
-
-  console.log('siteData', siteData)
-
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
