@@ -442,7 +442,7 @@ const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   return coins;
 }
 
-const mapSuppliedAmounts = (denoms, coins) => {
+const mapSuppliedAmounts = async (denoms, coins, supplyTotalJson) => {
   let formattedCoins = {};
 
   let mappedCoins = {}
@@ -453,7 +453,17 @@ const mapSuppliedAmounts = (denoms, coins) => {
   for(const denom of denoms) {
     let coin = emptyCoin(denom);
 
-    const accountCoin = mappedCoins[denom]
+    let accountCoin = mappedCoins[denom]
+    if (denom === 'swp') {
+      const swapSuppliedAmount = supplyTotalJson.result.find(d => d.denom === 'swp').amount
+      // console.log('swapSuppliedAmount', swapSuppliedAmount)
+      accountCoin = {
+        denom: 'swp',
+        amount: swapSuppliedAmount
+      }
+    }
+    console.log('accountCoin', accountCoin)
+
     if(accountCoin) {
       coin = { denom: commonDenomMapper(accountCoin.denom), amount: Number(accountCoin.amount) }
     }
@@ -926,11 +936,11 @@ const updateDisplayValues = async (denoms) => {
   const usdxBorrowed = await mapUsdxBorrowed(denoms, siteData)
   siteData['usdxBorrowed'] = usdxBorrowed;
 
-  const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
+  const suppliedAmounts = await mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins, supplyTotalJson);
   siteData['suppliedAmounts'] = suppliedAmounts;
 
-  const suppliedSwpAmount = await setSwpSupplyAmount(swpMarketDataJson);
-  siteData['suppliedAmounts']['swp'] = suppliedSwpAmount;
+  // const suppliedSwpAmount = await setSwpSupplyAmount(swpMarketDataJson);
+  // siteData['suppliedAmounts']['swp'] = suppliedSwpAmount;
 
   const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData)
   siteData['totalSuppliedData'] = totalSuppliedData;
@@ -946,6 +956,9 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
+
+  console.log('siteData', siteData)
+
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
