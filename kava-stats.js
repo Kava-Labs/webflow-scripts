@@ -525,6 +525,16 @@ const mapSupplyAndMarket = async (denoms, siteData) => {
 const mapUsdxMarketData = async (usdxMarketJson) => {
   return usdxMarketJson.market_data.price_change_percentage_24h
 }
+
+const setSwpSupplyAmount = async (swpMarketDataJson) => {
+  const swpSupplyAmount = Number(swpMarketDataJson.result.coins.find(coin => coin.denom === 'swp').amount);
+
+  return {
+    denom: 'swp',
+    amount: swpSupplyAmount
+  }
+};
+
 const setSwpPoolPrice = async (swpMarketDataJson) => {
   const usdxReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'usdx').amount / FACTOR_SIX;
   const swpReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'swp').amount / FACTOR_SIX;
@@ -534,10 +544,7 @@ const setSwpPoolPrice = async (swpMarketDataJson) => {
   return {
     price: swpPrice
   };
-}
-
-
-// const swpPoolReserves = swpMarketDataJson.result.coins.find(coin => coin.denom === 'usdx').amount;
+};
 
 
 const setTotalEarningsDisplayValues = async (denoms, siteData, cssIds) => {
@@ -854,6 +861,7 @@ const updateDisplayValues = async (denoms) => {
   const usdxMarketDataJson = await usdxMarketResponse.json();
   const swpMarketDataJson = await swpMarketResponse.json();
 
+
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
     'btcb-a': await btcPlatformAmountsJson.result,
@@ -913,6 +921,9 @@ const updateDisplayValues = async (denoms) => {
 
   const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
   siteData['suppliedAmounts'] = suppliedAmounts;
+
+  const suppliedSwpAmount = await setSwpSupplyAmount(swpMarketDataJson);
+  siteData['suppliedAmounts']['swp'] = suppliedSwpAmount;
 
   const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData)
   siteData['totalSuppliedData'] = totalSuppliedData;
