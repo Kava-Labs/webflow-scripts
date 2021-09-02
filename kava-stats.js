@@ -720,7 +720,7 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
 
 const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   const defiCoinsSupply = siteData['defiCoinsSupply'];
-  const swpSupply = siteData['suppliedAmounts']['swp'].amount
+  const swpSupply = siteData['supplyData']['swp'].amount
   const prices = siteData['prices'];
   const cssId = cssIds['totalMarketCap'];
 
