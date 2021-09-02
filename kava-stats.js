@@ -934,8 +934,8 @@ const updateDisplayValues = async (denoms) => {
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
 
-  // const suppliedSwpAmount = await setSwpSupplyAmount(supplyTotalJson);
-  // siteData['supplyData']['swp'] = suppliedSwpAmount;
+  const suppliedSwpAmount = await setSwpSupplyAmount(supplyTotalJson);
+  siteData['supplyData']['swp'] = suppliedSwpAmount;
 
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
