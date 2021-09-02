@@ -727,8 +727,13 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   for (const denom of denoms) {
     const price = prices[denom].price
     const suppliedCoin = defiCoinsSupply[denom]
+    if (denom === 'swp') {
+      siteData['suppliedAmounts']['swp'].amount = suppliedCoin;
+    }
+
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
+
 
     const desktopCssId = cssIds[denom]['marketCap']['d']
     const mobileCssId = cssIds[denom]['marketCap']['m']
