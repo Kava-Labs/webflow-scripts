@@ -131,7 +131,7 @@ const noDollarSign = (value) => {
 }
 
 var isKavaNativeAsset = (d) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(d)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp'].includes(d)
 }
 
 var denomLabel = (v) => {
@@ -157,23 +157,23 @@ var totalAmountOnPlatformByDenom = (data, denom) => {
   return Number(denomData.amount)
 }
 
-var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
-  const assetParams = bep3ParamsDataOld.result.asset_params;
-
-  const denomParams = assetParams.find(
-    (item) => item.denom.toUpperCase() === denom.toUpperCase()
-  );
-
-  let hasSupplyLimit = denomParams && denomParams.supply_limit && denomParams.supply_limit.limit;
-  return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
-};
-
-var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
-  const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
-  const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
-  setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
-  return denomTotalSupplyValue
-}
+// var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
+//   const assetParams = bep3ParamsDataOld.result.asset_params;
+//
+//   const denomParams = assetParams.find(
+//     (item) => item.denom.toUpperCase() === denom.toUpperCase()
+//   );
+//
+//   let hasSupplyLimit = denomParams && denomParams.supply_limit && denomParams.supply_limit.limit;
+//   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
+// };
+//
+// var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
+//   const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
+//   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
+//   setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
+//   return denomTotalSupplyValue
+// }
 
 const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
   const totalSuppliedData = siteData['totalSuppliedData']
@@ -525,6 +525,20 @@ const mapSupplyAndMarket = async (denoms, siteData) => {
 const mapUsdxMarketData = async (usdxMarketJson) => {
   return usdxMarketJson.market_data.price_change_percentage_24h
 }
+const setSwpPoolPrice = async (swpMarketDataJson) => {
+  const usdxReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'usdx').amount / FACTOR_SIX;
+  const swpReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'swp').amount / FACTOR_SIX;
+
+  const swpPrice = usdxReserveAmount / swpReserveAmount;
+
+  return {
+    price: swpPrice
+  };
+}
+
+
+// const swpPoolReserves = swpMarketDataJson.result.coins.find(coin => coin.denom === 'usdx').amount;
+
 
 const setTotalEarningsDisplayValues = async (denoms, siteData, cssIds) => {
   const usdxMintingRewards = siteData['incentiveParamsData'];
@@ -775,6 +789,7 @@ const updateDisplayValues = async (denoms) => {
     btcbMarketResponse,
     xrpbMarketResponse,
     usdxMarketResponse,
+    swpMarketResponse,
     supplyAccountResponse,
     supplyTotalResponse,
     bep3SupplyResponse,
@@ -798,6 +813,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     fetch('https://api.coingecko.com/api/v3/coins/usdx'),
+    fetch(BASE_URL + 'swap/pool?pool=swp:usdx'),
     fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "supply/total"),
     fetch(BASE_URL + "bep3/supplies"),
@@ -836,7 +852,7 @@ const updateDisplayValues = async (denoms) => {
   const hardMarketData = await hardMarketResponse.json();
   const kavaMarketData = await kavaMarketResponse.json();
   const usdxMarketDataJson = await usdxMarketResponse.json();
-
+  const swpMarketDataJson = await swpMarketResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -875,10 +891,13 @@ const updateDisplayValues = async (denoms) => {
   siteData['marketData'] = marketData;
 
   const usdxMarketData = await mapUsdxMarketData(usdxMarketDataJson)
-  siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData
+  siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData;
 
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
+
+  const swpPoolPrice = await setSwpPoolPrice(swpMarketDataJson);
+  siteData['prices']['swp'] = swpPoolPrice;
 
   const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
   siteData['incentiveParamsData'] = incentiveParamsData;
@@ -909,6 +928,10 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
+
+  console.log('siteData', siteData)
+
+  console.log('cssIds', cssIds)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
@@ -945,7 +968,7 @@ var main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx'
+    'ukava-a', 'usdx', 'swp'
   ]
 
   await updateDisplayValues(denoms);
