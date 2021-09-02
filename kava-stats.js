@@ -147,33 +147,33 @@ var denomLabel = (v) => {
   }
 }
 
-// var bnbAmountOnPlatform = (data) => {
-//   const denomData = data.result.find((d) => d.current_supply.denom === 'bnb')
-//   return Number(denomData.current_supply.amount)
-// }
-//
-// var totalAmountOnPlatformByDenom = (data, denom) => {
-//   const denomData = data.result.find((d) => d.denom === denom)
-//   return Number(denomData.amount)
-// }
+var bnbAmountOnPlatform = (data) => {
+  const denomData = data.result.find((d) => d.current_supply.denom === 'bnb')
+  return Number(denomData.current_supply.amount)
+}
 
-// var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
-//   const assetParams = bep3ParamsDataOld.result.asset_params;
-//
-//   const denomParams = assetParams.find(
-//     (item) => item.denom.toUpperCase() === denom.toUpperCase()
-//   );
-//
-//   let hasSupplyLimit = denomParams && denomParams.supply_limit && denomParams.supply_limit.limit;
-//   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
-// };
-//
-// var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
-//   const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
-//   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
-//   setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
-//   return denomTotalSupplyValue
-// }
+var totalAmountOnPlatformByDenom = (data, denom) => {
+  const denomData = data.result.find((d) => d.denom === denom)
+  return Number(denomData.amount)
+}
+
+var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
+  const assetParams = bep3ParamsDataOld.result.asset_params;
+
+  const denomParams = assetParams.find(
+    (item) => item.denom.toUpperCase() === denom.toUpperCase()
+  );
+
+  let hasSupplyLimit = denomParams && denomParams.supply_limit && denomParams.supply_limit.limit;
+  return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
+};
+
+var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
+  const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
+  const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
+  setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
+  return denomTotalSupplyValue
+}
 
 const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
   const totalSuppliedData = siteData['totalSuppliedData']
@@ -453,15 +453,7 @@ const mapSuppliedAmounts = (denoms, coins) => {
   for(const denom of denoms) {
     let coin = emptyCoin(denom);
 
-    let accountCoin = mappedCoins[denom]
-    // if (denom === 'swp') {
-    //   const swapSuppliedAmount = coins.find(coin => coin.denom === 'swp').amount
-    //   // console.log('swapSuppliedAmount', swapSuppliedAmount)
-    //   accountCoin = {
-    //     denom: 'swp',
-    //     amount: swapSuppliedAmount
-    //   }
-    // }
+    const accountCoin = mappedCoins[denom]
 
     if(accountCoin) {
       coin = { denom: commonDenomMapper(accountCoin.denom), amount: Number(accountCoin.amount) }
@@ -754,25 +746,25 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   }
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
 }
-//
-// var setDenomTotalSupplyValue = async (supplyDataOld, denomPrice, platformDenom) => {
-//   let denomTotalSupply;
-//   platformDenom === 'bnb' ?
-//     denomTotalSupply = bnbAmountOnPlatform(supplyDataOld) :
-//     denomTotalSupply = totalAmountOnPlatformByDenom(supplyDataOld, platformDenom)
-//   let denomTotalSupplyConverted
-//   isKavaNativeAsset(platformDenom) ?
-//     denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_SIX :
-//     denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_EIGHT
-//   let denomTotalSupplyValue =  Number(denomTotalSupplyConverted * denomPrice)
-//
-//   let data = {}
-//   data[`${platformDenom}Usd`] = denomTotalSupplyValue
-//   data[`${platformDenom}MarketCap`] = formatMoneyMillions(denomTotalSupplyValue)
-//   data[`${platformDenom}Supply`] = formatMoneyNoDecimalsOrLabels(denomTotalSupplyConverted) + ' ' + denomLabel(platformDenom)
-//
-//   return data;
-// };
+
+var setDenomTotalSupplyValue = async (supplyDataOld, denomPrice, platformDenom) => {
+  let denomTotalSupply;
+  platformDenom === 'bnb' ?
+    denomTotalSupply = bnbAmountOnPlatform(supplyDataOld) :
+    denomTotalSupply = totalAmountOnPlatformByDenom(supplyDataOld, platformDenom)
+  let denomTotalSupplyConverted
+  isKavaNativeAsset(platformDenom) ?
+    denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_SIX :
+    denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_EIGHT
+  let denomTotalSupplyValue =  Number(denomTotalSupplyConverted * denomPrice)
+
+  let data = {}
+  data[`${platformDenom}Usd`] = denomTotalSupplyValue
+  data[`${platformDenom}MarketCap`] = formatMoneyMillions(denomTotalSupplyValue)
+  data[`${platformDenom}Supply`] = formatMoneyNoDecimalsOrLabels(denomTotalSupplyConverted) + ' ' + denomLabel(platformDenom)
+
+  return data;
+};
 
 const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
   const defiCoinsSupply = siteData['defiCoinsSupply']
