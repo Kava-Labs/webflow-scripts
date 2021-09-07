@@ -946,8 +946,6 @@ const updateDisplayValues = async (denoms) => {
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
 
-  console.log(siteData)
-
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
 
