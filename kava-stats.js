@@ -525,14 +525,6 @@ const mapSupplyAndMarket = async (denoms, siteData) => {
   return coins
 }
 
-// const mapUsdxMarketData = async (usdxMarketJson) => {
-//   return usdxMarketJson.market_data.price_change_percentage_24h
-// }
-//
-// const mapSwpMarketData = async (swpMarketJson) => {
-//   return swpMarketJson.market_data.price_change_percentage_24h
-// }
-
 const mapCoinGeckoApiData = async (coinGeckoApiJson) => {
   //  currently using CoinGecko's API for price change for USDX and SWP
   return coinGeckoApiJson.market_data.price_change_percentage_24h;
@@ -726,9 +718,9 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
 }
 
 const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
-  const defiCoinsSupply = siteData['defiCoinsSupply'];
-  const prices = siteData['prices'];
-  const cssId = cssIds['totalMarketCap'];
+  const defiCoinsSupply = siteData['defiCoinsSupply']
+  const prices = siteData['prices']
+  const cssId = cssIds['totalMarketCap']
 
   let total = 0;
 
@@ -887,9 +879,8 @@ const updateDisplayValues = async (denoms) => {
     'xrpb-a': await xrpbMarketData,
     'hard-a': await hardMarketData,
     'ukava-a': await kavaMarketData,
-    // 'swp': swpMarketDataJson
   }
-  // usdx market data comes from a different api so we don't want it to
+  // usdx and swp market data comes from a different api so we don't want them to
   // map the same with the other markets
 
 
@@ -950,8 +941,6 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
-
-  console.log('siteData', siteData)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
