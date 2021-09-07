@@ -538,17 +538,13 @@ const setSwpSupplyAmount = async (supplyTotalJson) => {
   }
 };
 
-const setSwpPoolPrice = async (swpMarketDataJson) => {
-  const usdxReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'usdx').amount / FACTOR_SIX;
-  const swpReserveAmount =  swpMarketDataJson.result.coins.find(coin => coin.denom === 'swp').amount / FACTOR_SIX;
-
-  const swpPrice = usdxReserveAmount / swpReserveAmount;
+const setSwpPrice = async (swpMarketJson) => {
+  const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
 
   return {
-    price: swpPrice
+    price: swpPriceInUSD
   };
 };
-
 
 const setTotalEarningsDisplayValues = async (denoms, siteData, cssIds) => {
   const usdxMintingRewards = siteData['incentiveParamsData'];
@@ -800,7 +796,6 @@ const updateDisplayValues = async (denoms) => {
     xrpbMarketResponse,
     usdxMarketResponse,
     swpMarketResponse,
-    swpExternalMarketResponse,
     supplyAccountResponse,
     supplyTotalResponse,
     bep3SupplyResponse,
@@ -824,7 +819,6 @@ const updateDisplayValues = async (denoms) => {
     fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     fetch('https://api.coingecko.com/api/v3/coins/usdx'),
-    fetch(BASE_URL + 'swap/pool?pool=swp:usdx'),
     fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "supply/total"),
@@ -865,7 +859,6 @@ const updateDisplayValues = async (denoms) => {
   const kavaMarketData = await kavaMarketResponse.json();
   const usdxMarketDataJson = await usdxMarketResponse.json();
   const swpMarketDataJson = await swpMarketResponse.json();
-  const swpExternalMarketJson = await swpExternalMarketResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -885,7 +878,7 @@ const updateDisplayValues = async (denoms) => {
     'xrpb-a': await xrpbMarketData,
     'hard-a': await hardMarketData,
     'ukava-a': await kavaMarketData,
-    'swp': swpExternalMarketJson
+    'swp': swpMarketDataJson
   }
   // usdx market data comes from a different api so we don't want it to
   // map the same with the other markets
@@ -910,8 +903,8 @@ const updateDisplayValues = async (denoms) => {
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
 
-  const swpPoolPrice = await setSwpPoolPrice(swpMarketDataJson);
-  siteData['prices']['swp'] = swpPoolPrice;
+  const swpPrice = await setSwpPrice(swpMarketDataJson);
+  siteData['prices']['swp'] = swpPrice;
 
   const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
   siteData['incentiveParamsData'] = incentiveParamsData;
