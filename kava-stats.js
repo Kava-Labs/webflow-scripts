@@ -131,7 +131,7 @@ const noDollarSign = (value) => {
 }
 
 var isKavaNativeAsset = (d) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(d)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp'].includes(d)
 }
 
 var denomLabel = (v) => {
@@ -305,6 +305,9 @@ const mapMarketData = async (denoms, marketData) => {
 
   for (const market in marketData) {
     mappedMarkets[market] = { priceChangePercent: marketData[market].priceChangePercent };
+    if (market === 'swp') {
+      mappedMarkets[market] = { priceChangePercent: marketData.swp.market_data.price_change_percentage_24h };
+    }
   }
 
   for (const denom of denoms) {
@@ -522,9 +525,27 @@ const mapSupplyAndMarket = async (denoms, siteData) => {
   return coins
 }
 
-const mapUsdxMarketData = async (usdxMarketJson) => {
-  return usdxMarketJson.market_data.price_change_percentage_24h
+const mapCoinGeckoApiData = async (coinGeckoApiJson) => {
+  //  currently using CoinGecko's API for price change for USDX and SWP
+  return coinGeckoApiJson.market_data.price_change_percentage_24h;
 }
+
+const setSwpSupplyAmount = async (supplyTotalJson) => {
+  const swpSupplyAmount = Number(supplyTotalJson.result.find(coin => coin.denom === 'swp').amount);
+
+  return {
+    denom: 'swp',
+    amount: swpSupplyAmount
+  }
+};
+
+const setSwpPrice = async (swpMarketJson) => {
+  const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
+
+  return {
+    price: swpPriceInUSD
+  };
+};
 
 const setTotalEarningsDisplayValues = async (denoms, siteData, cssIds) => {
   const usdxMintingRewards = siteData['incentiveParamsData'];
@@ -775,6 +796,7 @@ const updateDisplayValues = async (denoms) => {
     btcbMarketResponse,
     xrpbMarketResponse,
     usdxMarketResponse,
+    swpMarketResponse,
     supplyAccountResponse,
     supplyTotalResponse,
     bep3SupplyResponse,
@@ -798,6 +820,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
     fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     fetch('https://api.coingecko.com/api/v3/coins/usdx'),
+    fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "supply/total"),
     fetch(BASE_URL + "bep3/supplies"),
@@ -836,7 +859,7 @@ const updateDisplayValues = async (denoms) => {
   const hardMarketData = await hardMarketResponse.json();
   const kavaMarketData = await kavaMarketResponse.json();
   const usdxMarketDataJson = await usdxMarketResponse.json();
-
+  const swpMarketDataJson = await swpMarketResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -855,9 +878,9 @@ const updateDisplayValues = async (denoms) => {
     'hbtc-a': await btcbMarketData,
     'xrpb-a': await xrpbMarketData,
     'hard-a': await hardMarketData,
-    'ukava-a': await kavaMarketData
+    'ukava-a': await kavaMarketData,
   }
-  // usdx market data comes from a different api so we don't want it to
+  // usdx and swp market data comes from a different api so we don't want them to
   // map the same with the other markets
 
 
@@ -874,11 +897,17 @@ const updateDisplayValues = async (denoms) => {
   const marketData = await mapMarketData(denoms, markets)
   siteData['marketData'] = marketData;
 
-  const usdxMarketData = await mapUsdxMarketData(usdxMarketDataJson)
-  siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData
+  const usdxMarketData = await mapCoinGeckoApiData(usdxMarketDataJson)
+  siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData;
+
+  const swpMarketData = await mapCoinGeckoApiData(swpMarketDataJson)
+  siteData['marketData']['swp']['priceChangePercent'] = swpMarketData;
 
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
+
+  const swpPrice = await setSwpPrice(swpMarketDataJson);
+  siteData['prices']['swp'] = swpPrice;
 
   const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
   siteData['incentiveParamsData'] = incentiveParamsData;
@@ -900,6 +929,9 @@ const updateDisplayValues = async (denoms) => {
 
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
+
+  const suppliedSwpAmount = await setSwpSupplyAmount(supplyTotalJson);
+  siteData['supplyData']['swp'] = suppliedSwpAmount;
 
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
@@ -945,7 +977,7 @@ var main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx'
+    'ukava-a', 'usdx', 'swp'
   ]
 
   await updateDisplayValues(denoms);
