@@ -737,7 +737,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   for (const denom of denoms) {
     const price = prices[denom].price
     const swpCoinSupplyByDenom = swpPoolCoinsSupply[denom] ? swpPoolCoinsSupply[denom].amount : 0;
-    const suppliedCoin = defiCoinsSupply[denom] + swpCoinSupplyByDenom
+    const suppliedCoin = defiCoinsSupply[denom] + swpCoinSupplyByDenom;
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
 
@@ -892,7 +892,7 @@ const updateDisplayValues = async (denoms) => {
     'hbtc-a': await btcbMarketData,
     'xrpb-a': await xrpbMarketData,
     'hard-a': await hardMarketData,
-    'ukava-a': await kavaMarketData,
+    'ukava-a': await kavaMarketData
   }
   // usdx and swp market data comes from a different api so we don't want them to
   // map the same with the other markets
