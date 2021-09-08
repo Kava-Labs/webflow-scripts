@@ -539,6 +539,32 @@ const setSwpSupplyAmount = async (supplyTotalJson) => {
   }
 };
 
+const mapSwpPoolData = async (denoms, swpPoolDataJson) => {
+  // let coins = {};
+  // const formattedSwpPoolData = swpPoolDataJson.result.map((pool) => {
+  //   const nonUsdxDenom = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1]
+  //
+  //   return {
+  //     denom: nonUsdxDenom.denom,
+  //     amount: nonUsdxDenom.amount
+  //   }
+  // });
+  //
+  // for (const denom of denoms ) {
+  //   if (denom === formattedSwpPoolData.denom)
+  //   coins[denom] = formattedSwpPoolData.denom
+  // }
+
+  return swpPoolDataJson.result.reduce((coinMap, pool) => {
+    const nonUsdxDenom = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+    coinMap[nonUsdxDenom.denom] = {
+      denom: nonUsdxDenom.denom,
+      amount: nonUsdxDenom.amount
+    }
+    return coinMap
+  }, {})
+}
+
 const setSwpPrice = async (swpMarketJson) => {
   const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
 
@@ -797,6 +823,7 @@ const updateDisplayValues = async (denoms) => {
     xrpbMarketResponse,
     usdxMarketResponse,
     swpMarketResponse,
+    swpPoolsResponse,
     supplyAccountResponse,
     supplyTotalResponse,
     bep3SupplyResponse,
@@ -821,6 +848,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     fetch('https://api.coingecko.com/api/v3/coins/usdx'),
     fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
+    fetch(BASE_URL + 'swap/pools'),
     fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "supply/total"),
     fetch(BASE_URL + "bep3/supplies"),
@@ -860,6 +888,7 @@ const updateDisplayValues = async (denoms) => {
   const kavaMarketData = await kavaMarketResponse.json();
   const usdxMarketDataJson = await usdxMarketResponse.json();
   const swpMarketDataJson = await swpMarketResponse.json();
+  const swpPoolDataJson = await swpPoolsResponse.json();
 
   const platformAmounts = {
     'bnb-a': await bnbPlatformAmountsJson.result,
@@ -868,7 +897,7 @@ const updateDisplayValues = async (denoms) => {
     'hbtc-a': await hbtcPlatformAmountsJson.result,
     'xrpb-a': await xrpPlatformAmountsJson.result,
     'hard-a': await hardPlatformAmountsJson.result,
-    'ukava-a': await ukavaPlatformAmountsJson.result
+    'ukava-a': await ukavaPlatformAmountsJson.result,
   }
 
   const markets = {
@@ -902,6 +931,9 @@ const updateDisplayValues = async (denoms) => {
 
   const swpMarketData = await mapCoinGeckoApiData(swpMarketDataJson)
   siteData['marketData']['swp']['priceChangePercent'] = swpMarketData;
+
+  const swpPoolData = await mapSwpPoolData(denoms, swpPoolDataJson)
+  siteData['swpPoolData'] = swpPoolData
 
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
@@ -941,6 +973,8 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
+
+  console.log('siteData', siteData)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
