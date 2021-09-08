@@ -540,29 +540,19 @@ const setSwpSupplyAmount = async (supplyTotalJson) => {
 };
 
 const mapSwpPoolData = async (denoms, swpPoolDataJson) => {
-  // let coins = {};
-  // const formattedSwpPoolData = swpPoolDataJson.result.map((pool) => {
-  //   const nonUsdxDenom = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1]
-  //
-  //   return {
-  //     denom: nonUsdxDenom.denom,
-  //     amount: nonUsdxDenom.amount
-  //   }
-  // });
-  //
-  // for (const denom of denoms ) {
-  //   if (denom === formattedSwpPoolData.denom)
-  //   coins[denom] = formattedSwpPoolData.denom
-  // }
 
-  return swpPoolDataJson.result.reduce((coinMap, pool) => {
-    const nonUsdxDenom = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
-    coinMap[nonUsdxDenom.denom] = {
-      denom: nonUsdxDenom.denom,
-      amount: nonUsdxDenom.amount
-    }
-    return coinMap
-  }, {})
+  const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
+    const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+
+    coinMap[nonUsdxAsset.denom] = {
+      denom: nonUsdxAsset.denom,
+      amount: Number(nonUsdxAsset.amount)
+    };
+
+    return coinMap;
+  }, {});
+
+  return coins;
 }
 
 const setSwpPrice = async (swpMarketJson) => {
@@ -745,6 +735,7 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
 
 const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   const defiCoinsSupply = siteData['defiCoinsSupply']
+  const swpPoolCoinsSupply = siteData['swpPoolData']
   const prices = siteData['prices']
   const cssId = cssIds['totalMarketCap']
 
@@ -752,7 +743,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const price = prices[denom].price
-    const suppliedCoin = defiCoinsSupply[denom]
+    const suppliedCoin = defiCoinsSupply[denom] + swpPoolCoinsSupply[denom]
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
 
@@ -998,7 +989,6 @@ const updateDisplayValues = async (denoms) => {
   await setTotalAssetsBorrowedDisplayValue(siteData, cssIds)
 
   await setMarketCapDisplayValues(denoms, siteData, cssIds)
-
   await setSupplyDisplayValues(denoms, siteData, cssIds)
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
