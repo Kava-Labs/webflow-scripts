@@ -544,7 +544,7 @@ const mapSwpPoolData = async (denoms, swpPoolDataJson) => {
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
 
-    coinMap[nonUsdxAsset.denom] = {
+    coinMap[commonDenomMapper(nonUsdxAsset.denom)] = {
       denom: nonUsdxAsset.denom,
       amount: Number(nonUsdxAsset.amount)
     };
@@ -743,7 +743,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const price = prices[denom].price
-    const suppliedCoin = defiCoinsSupply[denom] + swpPoolCoinsSupply[denom.split('-')[0]].amount
+    const suppliedCoin = defiCoinsSupply[denom] + swpPoolCoinsSupply[denom].amount
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
 
