@@ -743,7 +743,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const price = prices[denom].price
-    const suppliedCoin = defiCoinsSupply[denom] + swpPoolCoinsSupply[denom]
+    const suppliedCoin = defiCoinsSupply[denom] + swpPoolCoinsSupply[denom.split('-')[0]]
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
 
