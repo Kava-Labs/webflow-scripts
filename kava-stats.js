@@ -548,7 +548,7 @@ const mapSwpPoolData = async (denoms, swpPoolDataJson) => {
 
     coinMap[formattedDenom] = {
       denom: formattedDenom,
-      amount: Number(nonUsdxAsset.amount) / factor;
+      amount: Number(nonUsdxAsset.amount) / factor
     };
 
     return coinMap;
