@@ -131,7 +131,7 @@ const noDollarSign = (value) => {
 }
 
 var isKavaNativeAsset = (d) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp'].includes(d)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp-a'].includes(d)
 }
 
 var denomLabel = (v) => {
@@ -543,10 +543,12 @@ const mapSwpPoolData = async (denoms, swpPoolDataJson) => {
 
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+    const formattedDenom = commonDenomMapper(nonUsdxAsset.denom);
+    const factor = isKavaNativeAsset(formattedDenom) ? FACTOR_SIX : FACTOR_EIGHT;
 
-    coinMap[commonDenomMapper(nonUsdxAsset.denom)] = {
-      denom: commonDenomMapper(nonUsdxAsset.denom),
-      amount: Number(nonUsdxAsset.amount)
+    coinMap[formattedDenom] = {
+      denom: formattedDenom,
+      amount: Number(nonUsdxAsset.amount) / factor;
     };
 
     return coinMap;
