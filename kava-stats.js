@@ -1001,7 +1001,7 @@ var main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp'
+    'ukava-a', 'usdx', 'swp-a'
   ]
 
   await updateDisplayValues(denoms);
