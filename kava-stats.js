@@ -736,7 +736,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
 
   for (const denom of denoms) {
     const price = prices[denom].price
-    const swpCoinSupplyByDenom = swpPoolCoinsSupply[denom] ? swpPoolCoinsSupply[denom].amount : 0;
+    const swpCoinSupplyByDenom = swpPoolCoinsSupply[denom] && !isKavaNativeAsset(denom) ? swpPoolCoinsSupply[denom].amount : 0;
     const suppliedCoin = defiCoinsSupply[denom] + swpCoinSupplyByDenom;
     const suppliedDenomUsd = suppliedCoin * price;
     total += suppliedDenomUsd
