@@ -143,27 +143,30 @@ const mapPrices = async (denoms, pricefeedResult) => {
   return prices;
 };
 
-const mapSwpPoolData =  (denoms, swpPoolDataJson) => {
+const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
+  const prices = siteData['prices'];
+
   let usdxAmount = 0;
 
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
     const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
 
-    const formattedDenom = commonDenomMapper(nonUsdxAsset.denom);
-    const factor = isKavaNativeAsset(formattedDenom) ? FACTOR_SIX : FACTOR_EIGHT;
+    const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
+    const factor = isKavaNativeAsset(formattedNonUsdxDenom) ? FACTOR_SIX : FACTOR_EIGHT;
 
-    coinMap[formattedDenom] = {
-      denom: formattedDenom,
-      amount: Number(nonUsdxAsset.amount) / factor
+    coinMap[formattedNonUsdxDenom] = {
+      denom: formattedNonUsdxDenom,
+      amount: Number(nonUsdxAsset.amount) / factor,
+      value: Number(nonUsdxAsset.amount) / factor * prices[formattedNonUsdxDenom].price
     };
 
     coinMap.usdx = {
       denom: 'usdx',
-      amount: usdxAmount += Number(usdxAsset.amount) / factor
+      amount: usdxAmount += (Number(usdxAsset.amount) / FACTOR_SIX),
+      value: usdxAmount * prices['usdx'].price
     }
-    //  if the asset exists in the coinMap, add the amount
-    //  if it doesn't, add it as a key with the value as the pair
+
     return coinMap;
   }, {});
 
@@ -282,7 +285,7 @@ const updateDisplayValues = async(denoms) => {
   const swpPrice = await setSwpPrice(swpMarketDataJson);
   siteData['prices']['swp-a'] = swpPrice;
 
-  const swpPoolData = await mapSwpPoolData(denoms, swpPoolDataJson)
+  const swpPoolData = await mapSwpPoolData(denoms, siteData, swpPoolDataJson)
   siteData['swpPoolData'] = swpPoolData
 
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
