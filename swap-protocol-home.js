@@ -68,12 +68,12 @@ const formatPercentage = (value) => {
   return value +"%";
 };
 
-const getRewardPerYearByDenom = async (siteData) => {
+const getRewardsPerYearByPool = async (siteData) => {
   const incentiveParams = siteData['incentiveParams'];
-  const hardData = incentiveParams.hard_supply_reward_periods;
+  const swapData = incentiveParams.swap_reward_periods;
   let tokensDistributedBySuppliedAssetPerYear = {};
   const denomConversions = siteData['denomConversions'];
-  for (const period of hardData) {
+  for (const period of swapData) {
     const coins = {};
     for (const reward of period.rewards_per_second) {
       // 31536000 = seconds in a year
@@ -158,39 +158,56 @@ const mapCssIds = (denoms) => {
   return ids;
 }
 
-const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
-  //  pull data from siteData
+// const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
+//   //  pull data from siteData
+//
+//   let totalAssetValue = 0;
+//   for (const coin in balances) {
+//     const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
+//     const price = prices[coin].price;
+//     totalAssetValue += Number(currencyAmount * price);
+//   }
+//   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+//   setDisplayValueById(cssId, totalAssetValueUsd);
+// }
+//
+// const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
+//   //  pull data from siteData
+//   //  loop through denoms
+//   //  format data in USD
+//   const totalValueLockedUsd = usdFormatter.format(totalAssetValue);
+//
+//   setDisplayValueById(cssId, totalValueLockedUsd);
+//
+// }
 
-  let totalAssetValue = 0;
-  for (const coin in balances) {
-    const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
-    const price = prices[coin].price;
-    totalAssetValue += Number(currencyAmount * price);
-  }
-  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
-  setDisplayValueById(cssId, totalAssetValueUsd);
-}
+const setSwpPrice = async (swpMarketJson) => {
+  const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
 
+  return {
+    price: swpPriceInUSD
+  };
+};
 
+const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
+  //  pull data from siteData (swpLiquidityRewardsPerYearByDenom)
+  const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
 
-const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
-  //  pull data from siteData
-
-  for (const denom of denoms) {
-    const collatDenomPrice = prices[denom].price;
+  for (const pool of pools) {
+    const suppliedDenomPrice = prices[denom].price;
     let balanceAmount = 0;
     if (balances[denom]) {
       balanceAmount= Number(balances[denom].amount)
     }
     const balanceCurrency = balanceAmount / denomConversions[denom];
-    const reward = hardSupplyRewardsPerYearByDenom[denom];
+    const reward = swpRewardsPerYearByPool[denom];
 
     let numerator = 0;
     for (const rewardDenom in reward) {
       const denomPrice = prices[rewardDenom].price;
       numerator += Number(reward[rewardDenom].amount) * denomPrice;
     }
-    const denominator = balanceCurrency * collatDenomPrice;
+    const denominator = balanceCurrency * suppliedDenomPrice;
     let apy = '0.00%';
 
     if (denominator !==0) {
@@ -203,28 +220,46 @@ const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
   }
 };
 
-
-
 const updateDisplayValues = async(denoms) => {
   const [
-    //  responses
+    pricefeedResponse,
+    incentiveParametersResponse,
+    swpMarketResponse,
   ] = await Promise.all([
-    //  API calls
+    fetch(`${BASE_URL}/pricefeed/prices`),
+    fetch(`${BASE_URL}/incentive/parameters`),
+    fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
   ]);
+
+  const swpMarketDataJson = await swpMarketResponse.json();
 
   let siteData = {};
   const cssIds = mapCssIds(denoms);
 
+  const pricefeedPrices = await pricefeedResponse.json();
+  const incentiveParamsJson = await incentiveParametersResponse.json();
 
-//  Feed this into siteData
+  const prices = await mapPrices(denoms, pricefeedPrices.result);
+  siteData['prices'] = prices;
+
+  const denomConversions = setConversionFactors(denoms);
+  siteData['denomConversions'] = denomConversions;
+
+  const incentiveParams = await incentiveParamsJson.result;
+  siteData['incentiveParams'] = incentiveParams;
+
+  const swpPrice = await setSwpPrice(swpMarketDataJson);
+  siteData['prices']['swp-a'] = swpPrice;
+
+  const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
+  siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
+
+  console.log(siteData)
 
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds);
-  await setTotalHardDistributedDisplayValue(siteData, cssIds);
-  await setTotalSuppliedDisplayValues(denoms, siteData, cssIds);
-  await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
-  await setRewardApyDisplayValue(denoms, siteData, cssIds);
-  await setSupplyApyDisplayValue(denoms, siteData, cssIds);
+  await setTotalValueLockedDisplayValue(siteData, cssIds);
+  await setRewardApyDisplayValue(pools, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
@@ -236,6 +271,12 @@ const main = async () => {
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
     'ukava-a', 'swp-a'
+  ];
+
+  const pools = [
+    'bnb:usdx-a', 'btcb:usdx-a', 'busd:usdx-a',
+    'usdx-a:xrpb', 'hard:usdx-a',
+    'ukava:usdx-a', 'swp:usdx-a'
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
