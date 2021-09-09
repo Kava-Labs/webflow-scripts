@@ -143,11 +143,37 @@ const mapPrices = async (denoms, pricefeedResult) => {
   return prices;
 };
 
+const mapSwpPoolData =  (denoms, swpPoolDataJson) => {
+  let usdxAmount = 0;
+
+  const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
+    const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+    const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
+
+    const formattedDenom = commonDenomMapper(nonUsdxAsset.denom);
+    const factor = isKavaNativeAsset(formattedDenom) ? FACTOR_SIX : FACTOR_EIGHT;
+
+    coinMap[formattedDenom] = {
+      denom: formattedDenom,
+      amount: Number(nonUsdxAsset.amount) / factor
+    };
+
+    coinMap.usdx = {
+      denom: 'usdx',
+      amount: usdxAmount += Number(usdxAsset.amount) / factor
+    }
+    //  if the asset exists in the coinMap, add the amount
+    //  if it doesn't, add it as a key with the value as the pair
+    return coinMap;
+  }, {});
+
+  return coins;
+}
+
 const mapCssIds = (denoms) => {
   let ids = {}
   // total asset value
   ids['TAV'] = 'TAV';
-
 
   // for the market overview table
   for (const denom of denoms) {
@@ -192,6 +218,7 @@ const setSwpPrice = async (swpMarketJson) => {
 const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
   //  pull data from siteData (swpLiquidityRewardsPerYearByDenom)
   const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
+  const prices = siteData['prices'];
 
   for (const pool of pools) {
     const suppliedDenomPrice = prices[denom].price;
@@ -200,7 +227,7 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       balanceAmount= Number(balances[denom].amount)
     }
     const balanceCurrency = balanceAmount / denomConversions[denom];
-    const reward = swpRewardsPerYearByPool[denom];
+    const reward = swpRewardsPerYearByPool[pool];
 
     let numerator = 0;
     for (const rewardDenom in reward) {
@@ -225,13 +252,17 @@ const updateDisplayValues = async(denoms) => {
     pricefeedResponse,
     incentiveParametersResponse,
     swpMarketResponse,
+    swpPoolsResponse,
   ] = await Promise.all([
     fetch(`${BASE_URL}/pricefeed/prices`),
     fetch(`${BASE_URL}/incentive/parameters`),
     fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
+    fetch(`${BASE_URL}/swap/pools`),
   ]);
 
   const swpMarketDataJson = await swpMarketResponse.json();
+  const swpPoolDataJson = await swpPoolsResponse.json();
+
 
   let siteData = {};
   const cssIds = mapCssIds(denoms);
@@ -250,6 +281,9 @@ const updateDisplayValues = async(denoms) => {
 
   const swpPrice = await setSwpPrice(swpMarketDataJson);
   siteData['prices']['swp-a'] = swpPrice;
+
+  const swpPoolData = await mapSwpPoolData(denoms, swpPoolDataJson)
+  siteData['swpPoolData'] = swpPoolData
 
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
