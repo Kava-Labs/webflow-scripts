@@ -530,15 +530,6 @@ const mapCoinGeckoApiData = async (coinGeckoApiJson) => {
   return coinGeckoApiJson.market_data.price_change_percentage_24h;
 }
 
-const setSwpSupplyAmount = async (supplyTotalJson) => {
-  const swpSupplyAmount = Number(supplyTotalJson.result.find(coin => coin.denom === 'swp').amount);
-
-  return {
-    denom: 'swp',
-    amount: swpSupplyAmount
-  }
-};
-
 const setSwpPrice = async (swpMarketJson) => {
   const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
 
@@ -901,13 +892,13 @@ const updateDisplayValues = async (denoms) => {
   siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData;
 
   const swpMarketData = await mapCoinGeckoApiData(swpMarketDataJson)
-  siteData['marketData']['swp']['priceChangePercent'] = swpMarketData;
+  siteData['marketData']['swp-a']['priceChangePercent'] = swpMarketData;
 
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
 
   const swpPrice = await setSwpPrice(swpMarketDataJson);
-  siteData['prices']['swp'] = swpPrice;
+  siteData['prices']['swp-a'] = swpPrice;
 
   const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
   siteData['incentiveParamsData'] = incentiveParamsData;
@@ -930,9 +921,6 @@ const updateDisplayValues = async (denoms) => {
   const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
   siteData['supplyData'] = supplyData;
 
-  const suppliedSwpAmount = await setSwpSupplyAmount(supplyTotalJson);
-  siteData['supplyData']['swp'] = suppliedSwpAmount;
-
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
   siteData['bep3SupplyData'] = bep3SupplyData;
 
@@ -941,6 +929,8 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
+
+  console.log(siteData)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
@@ -977,7 +967,7 @@ var main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp'
+    'ukava-a', 'usdx', 'swp-a'
   ]
 
   await updateDisplayValues(denoms);
