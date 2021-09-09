@@ -131,7 +131,7 @@ const noDollarSign = (value) => {
 }
 
 var isKavaNativeAsset = (d) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp'].includes(d)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp-a'].includes(d)
 }
 
 var denomLabel = (v) => {
@@ -929,6 +929,8 @@ const updateDisplayValues = async (denoms) => {
 
   const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
+
+  console.log(siteData)
 
   // set display values
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
