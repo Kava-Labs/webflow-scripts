@@ -150,22 +150,17 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
 
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+    const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
     const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
 
-    const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
     const factor = isKavaNativeAsset(formattedNonUsdxDenom) ? FACTOR_SIX : FACTOR_EIGHT;
 
-    coinMap[formattedNonUsdxDenom] = {
-      denom: formattedNonUsdxDenom,
-      amount: Number(nonUsdxAsset.amount) / factor,
-      value: Number(nonUsdxAsset.amount) / factor * prices[formattedNonUsdxDenom].price
-    };
+    const nonUsdxAssetValue = nonUsdxAsset.amount / factor * prices[formattedNonUsdxDenom].price;
+    const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
 
-    coinMap.usdx = {
-      denom: 'usdx',
-      amount: usdxAmount += (Number(usdxAsset.amount) / FACTOR_SIX),
-      value: usdxAmount * prices['usdx'].price
-    }
+    coinMap[pool.name] = {
+      totalValueLocked: nonUsdxAssetValue + usdxAssetValue
+    };
 
     return coinMap;
   }, {});
