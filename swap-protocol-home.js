@@ -145,15 +145,15 @@ const mapPrices = async (denoms, pricefeedResult) => {
 
 const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   const prices = siteData['prices'];
-
-  let usdxAmount = 0;
+  const denomConversions = siteData['denomConversions'];
 
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
-    const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
     const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
 
-    const factor = isKavaNativeAsset(formattedNonUsdxDenom) ? FACTOR_SIX : FACTOR_EIGHT;
+    const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
+
+    const factor = denomConversions[formattedNonUsdxDenom]
 
     const nonUsdxAssetValue = nonUsdxAsset.amount / factor * prices[formattedNonUsdxDenom].price;
     const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
@@ -168,16 +168,16 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   return coins;
 }
 
-const mapCssIds = (denoms) => {
+const mapCssIds = (pools) => {
   let ids = {}
   // total asset value
   ids['TAV'] = 'TAV';
 
   // for the market overview table
-  for (const denom of denoms) {
-    ids[denom] = {};
-    ids[denom].totalValueLocked = formatCssId('tvl', denom);
-    ids[denom].rewardApy = formatCssId('rapy', denom);
+  for (const pool of pools) {
+    ids[pool] = {};
+    ids[pool].totalValueLocked = formatCssId('tvl', pool);
+    ids[pool].rewardApy = formatCssId('rapy', pool);
   }
   return ids;
 }
@@ -214,17 +214,19 @@ const setSwpPrice = async (swpMarketJson) => {
 };
 
 const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
-  //  pull data from siteData (swpLiquidityRewardsPerYearByDenom)
-  const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
   const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions'];
+  const totalValueLockedPerPool = siteData['swpPoolData'];
+  const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
 
   for (const pool of pools) {
-    const suppliedDenomPrice = prices[denom].price;
-    let balanceAmount = 0;
-    if (balances[denom]) {
-      balanceAmount= Number(balances[denom].amount)
+    const nonUsdxAsset = pool.split(':')[0] !== 'usdx-a' ? pool.split(':')[0] : pool.split(':')[1];
+    const suppliedDenomPrice = prices[commonDenomMapper(nonUsdxAsset)].price;
+    let tvlAmount = 0;
+    if (totalValueLockedPerPool[pool]) {
+      tvlAmount= Number(totalValueLockedPerPool[pool].totalValueLocked)
     }
-    const balanceCurrency = balanceAmount / denomConversions[denom];
+    const balanceCurrency = tvlAmount / denomConversions[nonUsdxAsset];
     const reward = swpRewardsPerYearByPool[pool];
 
     let numerator = 0;
@@ -240,12 +242,12 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
-    const cssId = cssIds[denom].rewardApy;
+    const cssId = cssIds[pool].rewardApy;
     setDisplayValueById(cssId, apy)
   }
 };
 
-const updateDisplayValues = async(denoms) => {
+const updateDisplayValues = async(denoms, pools) => {
   const [
     pricefeedResponse,
     incentiveParametersResponse,
@@ -263,10 +265,13 @@ const updateDisplayValues = async(denoms) => {
 
 
   let siteData = {};
-  const cssIds = mapCssIds(denoms);
+  const cssIds = mapCssIds(pools);
 
   const pricefeedPrices = await pricefeedResponse.json();
   const incentiveParamsJson = await incentiveParametersResponse.json();
+
+  const rewardApy = {};
+  siteData['rewardApy'] = rewardApy
 
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
@@ -289,8 +294,8 @@ const updateDisplayValues = async(denoms) => {
   console.log(siteData)
 
   // set display values in ui
-  await setTotalAssetValueDisplayValue(siteData, cssIds);
-  await setTotalValueLockedDisplayValue(siteData, cssIds);
+  // await setTotalAssetValueDisplayValue(siteData, cssIds);
+  // await setTotalValueLockedDisplayValue(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
@@ -310,7 +315,8 @@ const main = async () => {
     'usdx-a:xrpb', 'hard:usdx-a',
     'ukava:usdx-a', 'swp:usdx-a'
   ];
-  await updateDisplayValues(denoms);
+
+  await updateDisplayValues(denoms, pools);
   await sleep(30000);
   main();
 };
