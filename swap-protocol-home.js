@@ -182,6 +182,8 @@ const mapCssIds = (pools) => {
   return ids;
 }
 
+//  todo - when these are tested, refactor into single function that sets both
+//  tav and tvl ids in one pass through the tVLBP
 //  sum of all assets in all pools
 const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
   const cssId = cssIds['TAV'];
