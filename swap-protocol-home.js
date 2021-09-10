@@ -182,28 +182,32 @@ const mapCssIds = (pools) => {
   return ids;
 }
 
-// const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
-//   //  pull data from siteData
-//
-//   let totalAssetValue = 0;
-//   for (const coin in balances) {
-//     const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
-//     const price = prices[coin].price;
-//     totalAssetValue += Number(currencyAmount * price);
-//   }
-//   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
-//   setDisplayValueById(cssId, totalAssetValueUsd);
-// }
-//
-// const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
-//   //  pull data from siteData
-//   //  loop through denoms
-//   //  format data in USD
-//   const totalValueLockedUsd = usdFormatter.format(totalAssetValue);
-//
-//   setDisplayValueById(cssId, totalValueLockedUsd);
-//
-// }
+//  sum of all assets in all pools
+const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
+  const cssId = cssIds['TAV'];
+  const totalValueLockedByPool = siteData['swpPoolData'];
+
+  let totalAssetValue = 0;
+  for (const pool in totalValueLockedByPool) {
+    totalAssetValue += pool.totalValueLocked;
+  }
+  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+  setDisplayValueById(cssId, totalAssetValueUsd);
+};
+
+//  sum of assets in individual pools
+const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
+  const totalValueLockedByPool = siteData['swpPoolData'];
+
+  for (const pool in totalValueLockedByPool) {
+    let totalValueLocked = 0;
+    totalValueLocked += pool.totalValueLocked;
+
+    const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
+    const cssId = cssIds[pool]['tvl'];
+    setDisplayValueById(cssId, totalValueLockedUsd);
+  }
+};
 
 const setSwpPrice = async (swpMarketJson) => {
   const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
@@ -270,9 +274,6 @@ const updateDisplayValues = async(denoms, pools) => {
   const pricefeedPrices = await pricefeedResponse.json();
   const incentiveParamsJson = await incentiveParametersResponse.json();
 
-  const rewardApy = {};
-  siteData['rewardApy'] = rewardApy
-
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
 
@@ -294,8 +295,8 @@ const updateDisplayValues = async(denoms, pools) => {
   console.log(siteData)
 
   // set display values in ui
-  // await setTotalAssetValueDisplayValue(siteData, cssIds);
-  // await setTotalValueLockedDisplayValue(siteData, cssIds);
+  await setTotalAssetValueDisplayValue(siteData, cssIds);
+  await setTotalValueLockedDisplayValue(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent")
