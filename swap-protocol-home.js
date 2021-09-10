@@ -56,13 +56,17 @@ const formatCssId = (value, denom) => {
   return `${value}-${displayDenom}`.toUpperCase();
 }
 
-function formatCoins(coins) {
-  let formattedCoins = {};
-  for (const coin of coins) {
-    formattedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
-  }
-  return formattedCoins;
-}
+// function formatCoins(coins) {
+//   let formattedCoins = {};
+//   for (const coin of coins) {
+//     formattedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
+//   }
+//   return formattedCoins;
+// }
+
+//  Todo - helper function that formats pools by removing the usdx
+
+//  Todo helper that finds the non usdx denom in a pool listing
 
 const formatPercentage = (value) => {
   return value +"%";
@@ -91,6 +95,7 @@ const getRewardsPerYearByPool = async (siteData) => {
 const setDisplayValueById = (cssId, value) => {
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
+  console.log(cssId, value)
 }
 
 const commonDenomMapper = (denom) => {
