@@ -99,7 +99,7 @@ const getRewardsPerYearByPool = async (siteData) => {
 
       coins[commonDenomMapper(reward.denom)] = coinRewardPerYear;
     }
-    tokensDistributedBySuppliedAssetPerYear[commonDenomMapper(period.collateral_type)] =  coins;
+    tokensDistributedBySuppliedAssetPerYear[period.collateral_type] =  coins;
   }
   return tokensDistributedBySuppliedAssetPerYear;
 }
@@ -177,7 +177,8 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
     const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
 
     coinMap[pool.name] = {
-      totalValueLocked: nonUsdxAssetValue + usdxAssetValue
+      totalValueLocked: nonUsdxAssetValue + usdxAssetValue,
+      totalShares: Number(pool.total_shares)
     };
 
     return coinMap;
@@ -253,7 +254,7 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
     if (totalValueLockedPerPool[pool]) {
       tvlAmount= Number(totalValueLockedPerPool[pool].totalValueLocked)
     }
-    const balanceCurrency = tvlAmount / denomConversions[nonUsdxAsset];
+    const balanceCurrency = tvlAmount / denomConversions[nonUsdxAsset + '-a'];
     const reward = swpRewardsPerYearByPool[pool];
 
     let numerator = 0;
