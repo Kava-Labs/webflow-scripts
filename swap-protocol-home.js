@@ -64,9 +64,21 @@ const formatCssId = (value, denom) => {
 //   return formattedCoins;
 // }
 
-//  Todo - helper function that formats pools by removing the usdx
+//  Todo - helper function that formats pools by removing the '-a' from usdx
+const formatPoolName = (pool) => {
+  return pool.replace(/[-a]/gm, '')
+}
 
 //  Todo helper that finds the non usdx denom in a pool listing
+const findNonUsdxTokenInPool = (pool) => {
+  const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
+  return nonUsdxAsset;
+};
+
+const findUsdxTokenInPool = (pool) => {
+  const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
+  return usdxAsset;
+}
 
 const formatPercentage = (value) => {
   return value +"%";
@@ -93,9 +105,10 @@ const getRewardsPerYearByPool = async (siteData) => {
 }
 
 const setDisplayValueById = (cssId, value) => {
+  console.log(cssId, value)
+
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
-  console.log(cssId, value)
 }
 
 const commonDenomMapper = (denom) => {
@@ -153,8 +166,8 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   const denomConversions = siteData['denomConversions'];
 
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
-    const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
-    const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
+    const nonUsdxAsset = findNonUsdxTokenInPool(pool);
+    const usdxAsset = findUsdxTokenInPool(pool);
 
     const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
 
@@ -196,7 +209,7 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
 
   let totalAssetValue = 0;
   for (const pool in totalValueLockedByPool) {
-    totalAssetValue += pool.totalValueLocked;
+    totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
   setDisplayValueById(cssId, totalAssetValueUsd);
@@ -208,10 +221,10 @@ const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
 
   for (const pool in totalValueLockedByPool) {
     let totalValueLocked = 0;
-    totalValueLocked += pool.totalValueLocked;
+    totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssId = cssIds[pool]['tvl'];
+    const cssId = cssIds[totalValueLockedByPool[pool]]['tvl'];
     setDisplayValueById(cssId, totalValueLockedUsd);
   }
 };
