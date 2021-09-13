@@ -133,7 +133,7 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
     const factor = denomConversions[formattedNonUsdxDenom];
 
     const nonUsdxAssetValue = Number(nonUsdxAsset.amount) / factor * prices[formattedNonUsdxDenom].price;
-    const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
+    const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price;
 
     coinMap[pool.name] = {
       totalValueLocked: nonUsdxAssetValue + usdxAssetValue,
@@ -258,8 +258,8 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpPrice = await setSwpPrice(swpMarketJson.market_data);
   siteData['prices']['swp-a'] = swpPrice;
 
-  const swpPoolData = await mapSwpPoolData(denoms, siteData, swpPoolDataJson)
-  siteData['swpPoolData'] = swpPoolData
+  const swpPoolData = await mapSwpPoolData(denoms, siteData, swpPoolDataJson);
+  siteData['swpPoolData'] = swpPoolData;
 
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
