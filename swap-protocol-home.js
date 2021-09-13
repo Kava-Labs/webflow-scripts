@@ -39,21 +39,21 @@ const displayInThousands = (value) => {
   return valueInKUsd + "K";
 }
 
-const formatCssId = (value, denom) => {
-  let displayDenom;
-  switch(denom) {
-    case 'xrpb-a':
-      displayDenom = denom.split('b-')[0]
-      break;
-    case 'ukava-a':
-      displayDenom = 'kava'
-      break;
-    default:
-      displayDenom = denom.split('-')[0]
-      break;
-  }
+const formatCssId = (value, pool) => {
+  // let displayPool;
+  // switch(displayPool) {
+  //   case 'xrpb-a':
+  //     displayDenom = denom.split('b-')[0]
+  //     break;
+  //   case 'ukava-a':
+  //     displayDenom = 'kava'
+  //     break;
+  //   default:
+  //     displayDenom = denom.split('-')[0]
+  //     break;
+  // }
 
-  return `${value}-${displayDenom}`.toUpperCase();
+  return `${value}-${pool}`.toUpperCase();
 }
 
 // function formatCoins(coins) {
@@ -64,10 +64,10 @@ const formatCssId = (value, denom) => {
 //   return formattedCoins;
 // }
 
-//  Todo - helper function that formats pools by removing the '-a' from usdx
-const formatPoolName = (pool) => {
-  return pool.replace(/[-a]/gm, '')
-}
+// //  Todo - helper function that formats pools by removing the '-a' from usdx
+// const formatPoolName = (pool) => {
+//   return pool.replace(/[-a]/gm, '')
+// }
 
 //  Todo helper that finds the non usdx denom in a pool listing
 const findNonUsdxTokenInPool = (pool) => {
@@ -224,7 +224,9 @@ const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssId = cssIds[totalValueLockedByPool[pool]]['tvl'];
+    // const cssId = cssIds[[totalValueLockedByPool[pool]]['totalValueLocked']];
+    const cssId = cssIds[pool].totalValueLocked;
+
     setDisplayValueById(cssId, totalValueLockedUsd);
   }
 };
@@ -244,7 +246,8 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
   const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
 
   for (const pool of pools) {
-    const nonUsdxAsset = pool.split(':')[0] !== 'usdx-a' ? pool.split(':')[0] : pool.split(':')[1];
+    const nonUsdxAsset = pool.split(':')[0] !== 'usdx' ? pool.split(':')[0] : pool.split(':')[1];
+    // const nonUsdxAsset = findNonUsdxTokenInPool(pool);
     const suppliedDenomPrice = prices[commonDenomMapper(nonUsdxAsset)].price;
     let tvlAmount = 0;
     if (totalValueLockedPerPool[pool]) {
@@ -313,6 +316,7 @@ const updateDisplayValues = async(denoms, pools) => {
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
   console.log(siteData)
+  console.log(cssIds)
 
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds);
@@ -332,9 +336,9 @@ const main = async () => {
   ];
 
   const pools = [
-    'bnb:usdx-a', 'btcb:usdx-a', 'busd:usdx-a',
-    'usdx-a:xrpb', 'hard:usdx-a',
-    'ukava:usdx-a', 'swp:usdx-a'
+    'bnb:usdx', 'btcb:usdx', 'busd:usdx',
+    'usdx:xrpb', 'hard:usdx',
+    'ukava:usdx', 'swp:usdx'
   ];
 
   await updateDisplayValues(denoms, pools);
