@@ -132,7 +132,7 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
 
     const factor = denomConversions[formattedNonUsdxDenom];
 
-    const nonUsdxAssetValue = nonUsdxAsset.amount / factor * prices[formattedNonUsdxDenom].price;
+    const nonUsdxAssetValue = Number(nonUsdxAsset.amount) / factor * prices[formattedNonUsdxDenom].price;
     const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
 
     coinMap[pool.name] = {
