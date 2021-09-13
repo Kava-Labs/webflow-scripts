@@ -179,8 +179,11 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
 };
 
 
-const setSwpPrice = async (swpMarketJson) => {
-  const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
+const setSwpPrice = async (swpMarketData) => {
+  let swpPriceInUSD = 0;
+  if (swpMarketData) {
+    swpPriceInUSD = swpMarketData.current_price.usd;
+  }
 
   return {
     price: swpPriceInUSD
@@ -234,7 +237,7 @@ const updateDisplayValues = async(denoms, pools) => {
     fetch(`${BASE_URL}/swap/pools`),
   ]);
 
-  const swpMarketDataJson = await swpMarketResponse.json();
+  const swpMarketJson = await swpMarketResponse.json();
   const swpPoolDataJson = await swpPoolsResponse.json();
 
   let siteData = {};
@@ -252,7 +255,7 @@ const updateDisplayValues = async(denoms, pools) => {
   const incentiveParams = await incentiveParamsJson.result;
   siteData['incentiveParams'] = incentiveParams;
 
-  const swpPrice = await setSwpPrice(swpMarketDataJson);
+  const swpPrice = await setSwpPrice(swpMarketJson.market_data);
   siteData['prices']['swp-a'] = swpPrice;
 
   const swpPoolData = await mapSwpPoolData(denoms, siteData, swpPoolDataJson)
