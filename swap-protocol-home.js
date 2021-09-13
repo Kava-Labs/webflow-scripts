@@ -46,11 +46,11 @@ const formatPercentage = (value) => {
 };
 
 const getRewardsPerYearByPool = async (siteData) => {
-  const incentiveParams = siteData['incentiveParams'];
-  const swapData = incentiveParams.swap_reward_periods;
-  let tokensDistributedBySuppliedAssetPerYear = {};
+  const swapRewardPeriods = siteData['incentiveParams'].swap_reward_periods;
   const denomConversions = siteData['denomConversions'];
-  for (const period of swapData) {
+
+  let tokensDistributedBySuppliedAssetPerYear = {};
+  for (const period of swapRewardPeriods) {
     const coins = {};
     for (const reward of period.rewards_per_second) {
       // 31536000 = seconds in a year
