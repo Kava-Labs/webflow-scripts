@@ -27,49 +27,10 @@ const noDollarSign = (value) => {
   return value.slice(1, value.length);
 }
 
-const displayInMillions = (value) => {
-  const valueInMil = value/FACTOR_SIX;
-  const valueInMilUsd = usdFormatter.format(valueInMil);
-  return valueInMilUsd + "M";
-}
-
-const displayInThousands = (value) => {
-  const valueInK = value/Number(10 ** 3);
-  const valueInKUsd = usdFormatter.format(valueInK);
-  return valueInKUsd + "K";
-}
-
 const formatCssId = (value, pool) => {
-  // let displayPool;
-  // switch(displayPool) {
-  //   case 'xrpb-a':
-  //     displayDenom = denom.split('b-')[0]
-  //     break;
-  //   case 'ukava-a':
-  //     displayDenom = 'kava'
-  //     break;
-  //   default:
-  //     displayDenom = denom.split('-')[0]
-  //     break;
-  // }
-
   return `${value}-${pool}`.toUpperCase();
 }
 
-// function formatCoins(coins) {
-//   let formattedCoins = {};
-//   for (const coin of coins) {
-//     formattedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
-//   }
-//   return formattedCoins;
-// }
-
-// //  Todo - helper function that formats pools by removing the '-a' from usdx
-// const formatPoolName = (pool) => {
-//   return pool.replace(/[-a]/gm, '')
-// }
-
-//  Todo helper that finds the non usdx denom in a pool listing
 const findNonUsdxTokenInPool = (pool) => {
   const nonUsdxAsset = pool.coins[0].denom !== 'usdx' ? pool.coins[0] : pool.coins[1];
   return nonUsdxAsset;
@@ -105,8 +66,6 @@ const getRewardsPerYearByPool = async (siteData) => {
 }
 
 const setDisplayValueById = (cssId, value) => {
-  console.log(cssId, value)
-
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
 }
@@ -149,11 +108,11 @@ const mapPrices = async (denoms, pricefeedResult) => {
     }
   }
 
-  for ( const denom of denoms) {
+  for (const denom of denoms) {
     let mappedPrice = mappedPrices[denom];
     let price = { price: 0 };
 
-    if(mappedPrice) {
+    if (mappedPrice) {
       price = { price: mappedPrice.price };
     }
     prices[denom] = price;
@@ -171,7 +130,7 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
 
     const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
 
-    const factor = denomConversions[formattedNonUsdxDenom]
+    const factor = denomConversions[formattedNonUsdxDenom];
 
     const nonUsdxAssetValue = nonUsdxAsset.amount / factor * prices[formattedNonUsdxDenom].price;
     const usdxAssetValue = Number(usdxAsset.amount) / FACTOR_SIX * prices['usdx'].price
@@ -188,11 +147,9 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
 }
 
 const mapCssIds = (pools) => {
-  let ids = {}
-  // total asset value
+  let ids = {};
   ids['TAV'] = 'TAV';
 
-  // for the market overview table
   for (const pool of pools) {
     ids[pool] = {};
     ids[pool].totalValueLocked = formatCssId('tvl', pool);
@@ -201,36 +158,26 @@ const mapCssIds = (pools) => {
   return ids;
 }
 
-//  todo - when these are tested, refactor into single function that sets both
-//  tav and tvl ids in one pass through the tVLBP
-//  sum of all assets in all pools
-const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
-  const cssId = cssIds['TAV'];
+const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
+  const cssIdTAV = cssIds['TAV'];
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
-  for (const pool in totalValueLockedByPool) {
-    totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
-  }
-  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
-  setDisplayValueById(cssId, totalAssetValueUsd);
-};
-
-//  sum of assets in individual pools
-const setTotalValueLockedDisplayValue = async (siteData, cssIds) => {
-  const totalValueLockedByPool = siteData['swpPoolData'];
-
   for (const pool in totalValueLockedByPool) {
     let totalValueLocked = 0;
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    // const cssId = cssIds[[totalValueLockedByPool[pool]]['totalValueLocked']];
-    const cssId = cssIds[pool].totalValueLocked;
+    const cssIdTVL = cssIds[pool].totalValueLocked;
+    setDisplayValueById(cssIdTVL, totalValueLockedUsd);
 
-    setDisplayValueById(cssId, totalValueLockedUsd);
+    totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
+
+  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+  setDisplayValueById(cssIdTAV, totalAssetValueUsd);
 };
+
 
 const setSwpPrice = async (swpMarketJson) => {
   const swpPriceInUSD = swpMarketJson.market_data.current_price.usd;
@@ -242,36 +189,35 @@ const setSwpPrice = async (swpMarketJson) => {
 
 const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
   const prices = siteData['prices'];
-  const denomConversions = siteData['denomConversions'];
-  const totalValueLockedPerPool = siteData['swpPoolData'];
-  const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool']
+  const swpPoolData = siteData['swpPoolData'];
+  const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool'];
 
   for (const pool of pools) {
-    const nonUsdxAsset = pool.split(':')[0] !== 'usdx' ? pool.split(':')[0] : pool.split(':')[1];
-    // const nonUsdxAsset = findNonUsdxTokenInPool(pool);
-    const suppliedDenomPrice = prices[commonDenomMapper(nonUsdxAsset)].price;
     let tvlAmount = 0;
-    if (totalValueLockedPerPool[pool]) {
-      tvlAmount= Number(totalValueLockedPerPool[pool].totalValueLocked)
+    if (swpPoolData[pool].totalValueLocked) {
+      tvlAmount = Number(swpPoolData[pool].totalValueLocked);
     }
-    const balanceCurrency = tvlAmount / denomConversions[nonUsdxAsset + '-a'];
     const reward = swpRewardsPerYearByPool[pool];
 
-    let numerator = 0;
-    for (const rewardDenom in reward) {
-      const denomPrice = prices[rewardDenom].price;
-      numerator += Number(reward[rewardDenom].amount) * denomPrice;
-    }
-    const denominator = balanceCurrency * suppliedDenomPrice;
-    let apy = '0.00%';
+    const totalSharesPerPool = swpPoolData[pool].totalShares;
+    const rewardsPerYearUsd = Number(swpRewardsPerYearByPool[pool]['swp-a'].amount) * prices[commonDenomMapper(reward['swp-a'].denom)].price;
 
-    if (denominator !==0) {
-      // use usdFormatter to truncate to 2 decimals and round
-      const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
-      apy = formatPercentage(noDollarSign(apyWithDollarSign));
+    let rewardsPerShareUsd = 0;
+    let totalLiquidityPerShareUsd = 0;
+    if (totalSharesPerPool) {
+      rewardsPerShareUsd = rewardsPerYearUsd / totalSharesPerPool;
+      totalLiquidityPerShareUsd = tvlAmount / totalSharesPerPool;
     }
+
+    let rewardApy = 0;
+    if (totalLiquidityPerShareUsd) {
+      const rawApy = (rewardsPerShareUsd / totalLiquidityPerShareUsd) * 100;
+      const apyWithDollarSign = usdFormatter.format(rawApy);
+      rewardApy = formatPercentage(noDollarSign(apyWithDollarSign));
+    }
+
     const cssId = cssIds[pool].rewardApy;
-    setDisplayValueById(cssId, apy)
+    setDisplayValueById(cssId, rewardApy);
   }
 };
 
@@ -290,7 +236,6 @@ const updateDisplayValues = async(denoms, pools) => {
 
   const swpMarketDataJson = await swpMarketResponse.json();
   const swpPoolDataJson = await swpPoolsResponse.json();
-
 
   let siteData = {};
   const cssIds = mapCssIds(pools);
@@ -316,17 +261,12 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
-  console.log(siteData)
-  console.log(cssIds)
-
-  // set display values in ui
-  await setTotalAssetValueDisplayValue(siteData, cssIds);
-  await setTotalValueLockedDisplayValue(siteData, cssIds);
+  await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
 
-  $(".metric-blur").css("background-color", "transparent")
+  $(".metric-blur").css("background-color", "transparent");
   $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"})
+  $(".api-metric").css({"display": "block", "text-align": "center"});
 }
 
 const main = async () => {
