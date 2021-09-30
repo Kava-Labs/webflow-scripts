@@ -171,10 +171,9 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
     let totalValueLocked = 0;
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
-    const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    // const formattedPool = pool.replace(/\:/gm, '-');
+    // const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
     const cssIdTVL = cssIds[formatPoolName(pool)].totalValueLocked;
-    setDisplayValueById(cssIdTVL, totalValueLockedUsd);
+    setDisplayValueById(cssIdTVL, totalValueLocked);
 
     totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
