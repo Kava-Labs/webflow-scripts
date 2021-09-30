@@ -25,10 +25,14 @@ const setConversionFactors = (denoms) => {
 
 const noDollarSign = (value) => {
   return value.slice(1, value.length);
-}
+};
 
 const formatCssId = (value, pool) => {
   return `${value}-${pool}`.toUpperCase();
+};
+
+const formatPoolName = (pool) => {
+  return pool.replace(/\:/gm, '-');
 }
 
 const findNonUsdxTokenInPool = (pool) => {
@@ -168,13 +172,13 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssIdTVL = cssIds[pool].totalValueLocked;
+    const cssIdTVL = cssIds[formatPoolName(pool)].totalValueLocked;
     setDisplayValueById(cssIdTVL, totalValueLockedUsd);
 
     totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
 
-  const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+  const totalAssetValueUsd = noDollarSign(usdFormatter.format(totalAssetValue));
   setDisplayValueById(cssIdTAV, totalAssetValueUsd);
 };
 
@@ -195,7 +199,8 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
   const swpPoolData = siteData['swpPoolData'];
   const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool'];
 
-  for (const pool of pools) {
+
+  for (const pool in swpPoolData) {
     let tvlAmount = 0;
     if (swpPoolData[pool].totalValueLocked) {
       tvlAmount = Number(swpPoolData[pool].totalValueLocked);
@@ -219,7 +224,7 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       rewardApy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
 
-    const cssId = cssIds[pool].rewardApy;
+    const cssId = cssIds[formatPoolName(pool)].rewardApy;
     setDisplayValueById(cssId, rewardApy);
   }
 };
@@ -280,9 +285,9 @@ const main = async () => {
   ];
 
   const pools = [
-    'bnb:usdx', 'btcb:usdx', 'busd:usdx',
-    'usdx:xrpb', 'hard:usdx',
-    'ukava:usdx', 'swp:usdx'
+    'bnb-usdx', 'btcb-usdx', 'busd-usdx',
+    'usdx-xrpb', 'hard-usdx',
+    'ukava-usdx', 'swp-usdx'
   ];
 
   await updateDisplayValues(denoms, pools);
