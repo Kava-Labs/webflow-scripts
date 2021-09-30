@@ -163,7 +163,7 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds, pools) => {
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
-  for (const pool in pools) {
+  for (const pool of pools) {
     let totalValueLocked = 0;
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
