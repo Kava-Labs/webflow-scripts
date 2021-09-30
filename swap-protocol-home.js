@@ -25,10 +25,14 @@ const setConversionFactors = (denoms) => {
 
 const noDollarSign = (value) => {
   return value.slice(1, value.length);
-}
+};
 
 const formatCssId = (value, pool) => {
   return `${value}-${pool}`.toUpperCase();
+};
+
+const formatPoolName = (pool) => {
+  return pool.replace(/\:/gm, '-');
 }
 
 const findNonUsdxTokenInPool = (pool) => {
@@ -158,17 +162,18 @@ const mapCssIds = (pools) => {
   return ids;
 }
 
-const setTVLAndTAVDisplayValues = async (siteData, cssIds, pools) => {
+const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
   const cssIdTAV = cssIds['TAV'];
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
-  for (const pool of pools) {
+  for (const pool in totalValueLockedByPool) {
     let totalValueLocked = 0;
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssIdTVL = cssIds[pool].totalValueLocked;
+    // const formattedPool = pool.replace(/\:/gm, '-');
+    const cssIdTVL = cssIds[formatPoolName(pool)].totalValueLocked;
     setDisplayValueById(cssIdTVL, totalValueLockedUsd);
 
     totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
@@ -195,7 +200,8 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
   const swpPoolData = siteData['swpPoolData'];
   const swpRewardsPerYearByPool = siteData['swpRewardsPerYearByPool'];
 
-  for (const pool of pools) {
+
+  for (const pool in swpPoolData) {
     let tvlAmount = 0;
     if (swpPoolData[pool].totalValueLocked) {
       tvlAmount = Number(swpPoolData[pool].totalValueLocked);
@@ -219,7 +225,7 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       rewardApy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
 
-    const cssId = cssIds[pool].rewardApy;
+    const cssId = cssIds[formatPoolName(pool)].rewardApy;
     setDisplayValueById(cssId, rewardApy);
   }
 };
@@ -264,7 +270,7 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
-  await setTVLAndTAVDisplayValues(siteData, cssIds, pools);
+  await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent");
