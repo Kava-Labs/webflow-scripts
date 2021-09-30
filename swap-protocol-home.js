@@ -280,7 +280,7 @@ const main = async () => {
   ];
 
   const pools = [
-    'bnb:usdx', 'btcb:usdx', 'busd:usdx',
+    'bnbusdx', 'btcb:usdx', 'busd-usdx',
     'usdx:xrpb', 'hard:usdx',
     'ukava:usdx', 'swp:usdx'
   ];
