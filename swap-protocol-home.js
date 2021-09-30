@@ -158,12 +158,12 @@ const mapCssIds = (pools) => {
   return ids;
 }
 
-const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
+const setTVLAndTAVDisplayValues = async (siteData, cssIds, pools) => {
   const cssIdTAV = cssIds['TAV'];
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
-  for (const pool in totalValueLockedByPool) {
+  for (const pool in pools) {
     let totalValueLocked = 0;
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
@@ -264,7 +264,7 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
-  await setTVLAndTAVDisplayValues(siteData, cssIds);
+  await setTVLAndTAVDisplayValues(siteData, cssIds, pools);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent");
