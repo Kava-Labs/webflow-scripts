@@ -285,9 +285,9 @@ const main = async () => {
   ];
 
   const pools = [
-    'bnb-usdx', 'btcb-usdx', 'busd-usdx',
-    'usdx-xrpb', 'hard-usdx',
-    'ukava-usdx', 'swp-usdx'
+    'bnb:usdx', 'btcb:usdx', 'busd:usdx',
+    'usdx:xrpb', 'hard:usdx',
+    'ukava:usdx', 'swp:usdx'
   ];
 
   await updateDisplayValues(denoms, pools);
