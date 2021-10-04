@@ -175,7 +175,7 @@ const getVolumesByPool = (swpPoolVolumeJson, siteData) => {
 const mapCssIds = (pools) => {
   let ids = {};
   ids['TAV'] = 'TAV';
-  ids['T24HV'] = 'T24HV';
+  ids['DV'] = 'DV';
 
   for (const pool of pools) {
     ids[pool] = {};
@@ -207,7 +207,7 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
 };
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
-  const cssIdT24H = cssIds['T24HV'];
+  const cssIDDV = cssIds['DV'];
   const swpVolumesByPoolInUSD = siteData['swpVolumesByPoolInUSD'];
 
   let totalDailyVolume = 0;
@@ -223,7 +223,7 @@ const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
   }
 
   const totalDailyVolumeInUSD = usdFormatter.format(totalDailyVolume);
-  setDisplayValueById(cssIdT24H, totalDailyVolumeInUSD);
+  setDisplayValueById(cssIDDV, totalDailyVolumeInUSD);
 };
 
 
