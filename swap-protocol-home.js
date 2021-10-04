@@ -322,7 +322,7 @@ const updateDisplayValues = async(denoms, pools) => {
 
   await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
-  await setDailyVolumesDisplayValues(siteData, cssIds)
+  await setDailyVolumesDisplayValues(siteData, cssIds);
 
   $(".metric-blur").css("background-color", "transparent");
   $(".metric-blur").addClass('without-after');
