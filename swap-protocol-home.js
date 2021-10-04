@@ -150,14 +150,38 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   return coins;
 }
 
+const getVolumesByPool = (swpPoolVolumeJson, siteData) => {
+  const prices = siteData['prices'];
+  const denomConversions = siteData['denomConversions'];
+  let volumesByPoolInUSD = {};
+
+  for (pool of swpPoolVolumeJson) {
+    let totalPoolVolumeInUSD = 0;
+    for (coin of pool.volume) {
+      const formattedDenom = commonDenomMapper(coin.denom);
+      const factor = denomConversions[formattedDenom];
+
+      if (prices[formattedDenom]) {
+        totalPoolVolumeInUSD += Number(coin.amount) * prices[formattedDenom].price / factor;
+      }
+
+      volumesByPoolInUSD[pool.name] = totalPoolVolumeInUSD;
+    }
+  }
+
+  return volumesByPoolInUSD;
+};
+
 const mapCssIds = (pools) => {
   let ids = {};
   ids['TAV'] = 'TAV';
+  ids['T24HV'] = 'T24HV';
 
   for (const pool of pools) {
     ids[pool] = {};
     ids[pool].totalValueLocked = formatCssId('tvl', pool);
     ids[pool].rewardApy = formatCssId('rapy', pool);
+    ids[pool].dailyVolume = formatCssId('dv', pool)
   }
   return ids;
 }
@@ -180,6 +204,27 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
 
   const totalAssetValueUsd = noDollarSign(usdFormatter.format(totalAssetValue));
   setDisplayValueById(cssIdTAV, totalAssetValueUsd);
+};
+
+const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
+  const cssIdT24H = cssIds['T24HV'];
+
+  const swpVolumesByPoolInUSD = siteData['swpVolumesByPoolInUSD'];
+
+  let totalVolume = 0;
+  for (const pool in swpVolumesByPoolInUSD) {
+    let volume = 0;
+    volume += swpVolumesByPoolInUSD[pool];
+
+    const volumeUSD = usdFormatter.format(volume);
+    const cssIdDailyVolume = cssIds[formatPoolName(pool)].dailyVolume;
+    setDisplayValueById(cssIdDailyVolume, volumeUSD);
+
+    totalVolume += volume;
+  }
+
+  const totalDailyVolumeInUSD = usdFormatter.format(totalVolume);
+  setDisplayValueById(cssIdT24H, totalDailyVolumeInUSD);
 };
 
 
@@ -235,15 +280,18 @@ const updateDisplayValues = async(denoms, pools) => {
     incentiveParametersResponse,
     swpMarketResponse,
     swpPoolsResponse,
+    swpPoolVolumeResponse,
   ] = await Promise.all([
     fetch(`${BASE_URL}/pricefeed/prices`),
     fetch(`${BASE_URL}/incentive/parameters`),
     fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     fetch(`${BASE_URL}/swap/pools`),
+    fetch('https://swap-data.kava.io/v1/pools/internal'),
   ]);
 
   const swpMarketJson = await swpMarketResponse.json();
   const swpPoolDataJson = await swpPoolsResponse.json();
+  const swpPoolVolumeJson = await swpPoolVolumeResponse.json();
 
   let siteData = {};
   const cssIds = mapCssIds(pools);
@@ -269,8 +317,12 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
+  const swpVolumesByPoolInUSD = await getVolumesByPool(swpPoolVolumeJson, siteData);
+  siteData['swpVolumesByPoolInUSD'] = swpVolumesByPoolInUSD;
+
   await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
+  await setDailyVolumesDisplayValues(siteData, cssIds)
 
   $(".metric-blur").css("background-color", "transparent");
   $(".metric-blur").addClass('without-after');
