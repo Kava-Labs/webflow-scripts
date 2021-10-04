@@ -181,7 +181,7 @@ const mapCssIds = (pools) => {
     ids[pool] = {};
     ids[pool].totalValueLocked = formatCssId('tvl', pool);
     ids[pool].rewardApy = formatCssId('rapy', pool);
-    ids[pool].dailyVolume = formatCssId('dv', pool)
+    ids[pool].dailyVolume = formatCssId('dv', pool);
   }
   return ids;
 }
@@ -208,22 +208,21 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
   const cssIdT24H = cssIds['T24HV'];
-
   const swpVolumesByPoolInUSD = siteData['swpVolumesByPoolInUSD'];
 
-  let totalVolume = 0;
+  let totalDailyVolume = 0;
   for (const pool in swpVolumesByPoolInUSD) {
-    let volume = 0;
-    volume += swpVolumesByPoolInUSD[pool];
+    let poolVolume = 0;
+    poolVolume += swpVolumesByPoolInUSD[pool];
 
-    const volumeUSD = usdFormatter.format(volume);
+    const poolVolumeUSD = usdFormatter.format(poolVolume);
     const cssIdDailyVolume = cssIds[formatPoolName(pool)].dailyVolume;
-    setDisplayValueById(cssIdDailyVolume, volumeUSD);
+    setDisplayValueById(cssIdDailyVolume, poolVolumeUSD);
 
-    totalVolume += volume;
+    totalDailyVolume += poolVolume;
   }
 
-  const totalDailyVolumeInUSD = usdFormatter.format(totalVolume);
+  const totalDailyVolumeInUSD = usdFormatter.format(totalDailyVolume);
   setDisplayValueById(cssIdT24H, totalDailyVolumeInUSD);
 };
 
