@@ -70,7 +70,6 @@ const getRewardsPerYearByPool = async (siteData) => {
 }
 
 const setDisplayValueById = (cssId, value) => {
-  console.log(cssId, value)
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
 }
@@ -175,8 +174,16 @@ const getVolumesByPool = (swpPoolVolumeJson, siteData) => {
 
 const mapCssIds = (pools) => {
   let ids = {};
-  ids['TAV'] = 'TAV';
-  ids['DV'] = 'DV';
+
+  ids['TAV'] = {
+    d: 'TAV',
+    m: 'TAV-M'
+  };
+
+  ids['DV'] = {
+    d: 'DV',
+    m: 'DV-M'
+  };
 
   for (const pool of pools) {
     ids[pool] = {};
@@ -231,7 +238,9 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
 };
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
-  const cssIDDV = cssIds['DV'];
+  const cssIDDesktopDV = cssIds['DV']['d'];
+  const cssIDMobileDV = cssIds['DV']['m'];
+
   const swpVolumesByPoolInUSD = siteData['swpVolumesByPoolInUSD'];
 
   let totalDailyVolume = 0;
@@ -240,14 +249,19 @@ const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
     poolVolume += swpVolumesByPoolInUSD[pool];
 
     const poolVolumeUSD = usdFormatter.format(poolVolume);
-    const cssIdDailyVolume = cssIds[formatPoolName(pool)].dailyVolume;
-    setDisplayValueById(cssIdDailyVolume, poolVolumeUSD);
+    const cssIdDailyVolumeDesktop = cssIds[formatPoolName(pool)].dailyVolume['d'];
+    const cssIdDailyVolumeMobile = cssIds[formatPoolName(pool)].dailyVolume['m'];
+
+    setDisplayValueById(cssIdDailyVolumeDesktop, poolVolumeUSD);
+    setDisplayValueById(cssIdDailyVolumeMobile, poolVolumeUSD);
 
     totalDailyVolume += poolVolume;
   }
 
   const totalDailyVolumeInUSD = usdFormatter.format(totalDailyVolume);
-  setDisplayValueById(cssIDDV, totalDailyVolumeInUSD);
+
+  setDisplayValueById(cssIDDesktopDV, totalDailyVolumeInUSD);
+  setDisplayValueById(cssIDMobileDV, totalDailyVolumeInUSD);
 };
 
 
@@ -292,8 +306,11 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       rewardApy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
 
-    const cssId = cssIds[formatPoolName(pool)].rewardApy;
-    setDisplayValueById(cssId, rewardApy);
+    const cssIdDesktop = cssIds[formatPoolName(pool)].rewardApy['d'];
+    const cssIdMobile = cssIds[formatPoolName(pool)].rewardApy['m'];
+
+    setDisplayValueById(cssIdDesktop, rewardApy);
+    setDisplayValueById(cssIdMobile, rewardApy);
   }
 };
 
