@@ -205,10 +205,7 @@ const mapCssIds = (pools) => {
   }
 
   return ids;
-}
-
-//    const desktopCssId = cssIds[denom]['marketCap']['d']
-// const mobileCssId = cssIds[denom]['marketCap']['m']
+};
 
 const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
   const cssIdDesktopTAV = cssIds['TAV']['d'];
@@ -224,7 +221,6 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
     const cssIdDesktopTVL = cssIds[formatPoolName(pool)].totalValueLocked['d'];
     const cssIdMobileTVL = cssIds[formatPoolName(pool)].totalValueLocked['m'];
-
     setDisplayValueById(cssIdDesktopTVL, totalValueLockedUsd);
     setDisplayValueById(cssIdMobileTVL, totalValueLockedUsd);
 
@@ -234,7 +230,6 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
   const totalAssetValueUsd = noDollarSign(usdFormatter.format(totalAssetValue));
   setDisplayValueById(cssIdDesktopTAV, totalAssetValueUsd);
   setDisplayValueById(cssIdMobileTAV, totalAssetValueUsd);
-
 };
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
@@ -251,7 +246,6 @@ const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
     const poolVolumeUSD = usdFormatter.format(poolVolume);
     const cssIdDailyVolumeDesktop = cssIds[formatPoolName(pool)].dailyVolume['d'];
     const cssIdDailyVolumeMobile = cssIds[formatPoolName(pool)].dailyVolume['m'];
-
     setDisplayValueById(cssIdDailyVolumeDesktop, poolVolumeUSD);
     setDisplayValueById(cssIdDailyVolumeMobile, poolVolumeUSD);
 
@@ -259,7 +253,6 @@ const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
   }
 
   const totalDailyVolumeInUSD = usdFormatter.format(totalDailyVolume);
-
   setDisplayValueById(cssIDDesktopDV, totalDailyVolumeInUSD);
   setDisplayValueById(cssIDMobileDV, totalDailyVolumeInUSD);
 };
