@@ -70,6 +70,7 @@ const getRewardsPerYearByPool = async (siteData) => {
 }
 
 const setDisplayValueById = (cssId, value) => {
+  console.log(cssId, value)
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
 }
@@ -179,15 +180,33 @@ const mapCssIds = (pools) => {
 
   for (const pool of pools) {
     ids[pool] = {};
-    ids[pool].totalValueLocked = formatCssId('tvl', pool);
-    ids[pool].rewardApy = formatCssId('rapy', pool);
-    ids[pool].dailyVolume = formatCssId('dv', pool);
+
+    ids[pool].totalValueLocked = {
+      d: formatCssId('tvl', pool),
+      m: formatCssId('tvl-m', pool)
+    };
+
+    ids[pool].rewardApy = {
+        d: formatCssId('rapy', pool),
+        m: formatCssId('rapy-m', pool)
+      };
+
+    ids[pool].dailyVolume = {
+      d: formatCssId('dv', pool),
+      m: formatCssId('dv-m', pool)
+    };
   }
+
   return ids;
 }
 
+//    const desktopCssId = cssIds[denom]['marketCap']['d']
+// const mobileCssId = cssIds[denom]['marketCap']['m']
+
 const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
-  const cssIdTAV = cssIds['TAV'];
+  const cssIdDesktopTAV = cssIds['TAV']['d'];
+  const cssIdMobileTAV = cssIds['TAV']['m'];
+
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
@@ -196,14 +215,19 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssIdTVL = cssIds[formatPoolName(pool)].totalValueLocked;
-    setDisplayValueById(cssIdTVL, totalValueLockedUsd);
+    const cssIdDesktopTVL = cssIds[formatPoolName(pool)].totalValueLocked['d'];
+    const cssIdMobileTVL = cssIds[formatPoolName(pool)].totalValueLocked['m'];
+
+    setDisplayValueById(cssIdDesktopTVL, totalValueLockedUsd);
+    setDisplayValueById(cssIdMobileTVL, totalValueLockedUsd);
 
     totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
 
   const totalAssetValueUsd = noDollarSign(usdFormatter.format(totalAssetValue));
-  setDisplayValueById(cssIdTAV, totalAssetValueUsd);
+  setDisplayValueById(cssIdDesktopTAV, totalAssetValueUsd);
+  setDisplayValueById(cssIdMobileTAV, totalAssetValueUsd);
+
 };
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
