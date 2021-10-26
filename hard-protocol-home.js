@@ -214,7 +214,7 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
     const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin];
 
     const price = prices[coin].price;
-    totalAssetValue += Number(suppliedCurrencyAmount * price) + Number(borrowedCurrencyAmount * price);
+    totalAssetValue += (suppliedCurrencyAmount + borrowedCurrencyAmount) * price;
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
   setDisplayValueById(cssId, totalAssetValueUsd);
