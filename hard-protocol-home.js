@@ -129,7 +129,6 @@ const getTotalHardAvailable = async (hardData) => {
 const setDisplayValueById = (cssId, value) => {
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
-  console.log(cssId, value)
 }
 
 const commonDenomMapper = (denom) => {
