@@ -129,6 +129,7 @@ const getTotalHardAvailable = async (hardData) => {
 const setDisplayValueById = (cssId, value) => {
   const element = document.getElementById(cssId)
   if (element) { element.innerHTML = value; }
+  console.log(cssId, value)
 }
 
 const commonDenomMapper = (denom) => {
@@ -202,16 +203,18 @@ const mapCssIds = (denoms) => {
 
 const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
   const cssId = cssIds['TAV'];
-  const balances = siteData['hardAccount'];
+  const suppliedBalances = siteData['hardTotalSupplied'];
+  const borrowedBalances = siteData['hardTotalBorrowed'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
 
-
   let totalAssetValue = 0;
-  for (const coin in balances) {
-    const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
+  for (const coin in suppliedBalances) {
+    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin];
+    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin];
+
     const price = prices[coin].price;
-    totalAssetValue += Number(currencyAmount * price);
+    totalAssetValue += Number(suppliedCurrencyAmount * price) + Number(borrowedCurrencyAmount * price);
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
   setDisplayValueById(cssId, totalAssetValueUsd);
