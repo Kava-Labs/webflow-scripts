@@ -174,20 +174,43 @@ const getVolumesByPool = (swpPoolVolumeJson, siteData) => {
 
 const mapCssIds = (pools) => {
   let ids = {};
-  ids['TAV'] = 'TAV';
-  ids['DV'] = 'DV';
+
+  ids['TAV'] = {
+    d: 'TAV',
+    m: 'TAV-M'
+  };
+
+  ids['DV'] = {
+    d: 'DV',
+    m: 'DV-M'
+  };
 
   for (const pool of pools) {
     ids[pool] = {};
-    ids[pool].totalValueLocked = formatCssId('tvl', pool);
-    ids[pool].rewardApy = formatCssId('rapy', pool);
-    ids[pool].dailyVolume = formatCssId('dv', pool);
+
+    ids[pool].totalValueLocked = {
+      d: formatCssId('tvl', pool),
+      m: formatCssId('tvl-m', pool)
+    };
+
+    ids[pool].rewardApy = {
+        d: formatCssId('rapy', pool),
+        m: formatCssId('rapy-m', pool)
+      };
+
+    ids[pool].dailyVolume = {
+      d: formatCssId('dv', pool),
+      m: formatCssId('dv-m', pool)
+    };
   }
+
   return ids;
-}
+};
 
 const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
-  const cssIdTAV = cssIds['TAV'];
+  const cssIdDesktopTAV = cssIds['TAV']['d'];
+  const cssIdMobileTAV = cssIds['TAV']['m'];
+
   const totalValueLockedByPool = siteData['swpPoolData'];
 
   let totalAssetValue = 0;
@@ -196,18 +219,23 @@ const setTVLAndTAVDisplayValues = async (siteData, cssIds) => {
     totalValueLocked += totalValueLockedByPool[pool].totalValueLocked;
 
     const totalValueLockedUsd = usdFormatter.format(totalValueLocked);
-    const cssIdTVL = cssIds[formatPoolName(pool)].totalValueLocked;
-    setDisplayValueById(cssIdTVL, totalValueLockedUsd);
+    const cssIdDesktopTVL = cssIds[formatPoolName(pool)].totalValueLocked['d'];
+    const cssIdMobileTVL = cssIds[formatPoolName(pool)].totalValueLocked['m'];
+    setDisplayValueById(cssIdDesktopTVL, totalValueLockedUsd);
+    setDisplayValueById(cssIdMobileTVL, totalValueLockedUsd);
 
     totalAssetValue += totalValueLockedByPool[pool].totalValueLocked;
   }
 
   const totalAssetValueUsd = noDollarSign(usdFormatter.format(totalAssetValue));
-  setDisplayValueById(cssIdTAV, totalAssetValueUsd);
+  setDisplayValueById(cssIdDesktopTAV, totalAssetValueUsd);
+  setDisplayValueById(cssIdMobileTAV, totalAssetValueUsd);
 };
 
 const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
-  const cssIDDV = cssIds['DV'];
+  const cssIDDesktopDV = cssIds['DV']['d'];
+  const cssIDMobileDV = cssIds['DV']['m'];
+
   const swpVolumesByPoolInUSD = siteData['swpVolumesByPoolInUSD'];
 
   let totalDailyVolume = 0;
@@ -216,14 +244,17 @@ const setDailyVolumesDisplayValues = async (siteData, cssIds) => {
     poolVolume += swpVolumesByPoolInUSD[pool];
 
     const poolVolumeUSD = usdFormatter.format(poolVolume);
-    const cssIdDailyVolume = cssIds[formatPoolName(pool)].dailyVolume;
-    setDisplayValueById(cssIdDailyVolume, poolVolumeUSD);
+    const cssIdDailyVolumeDesktop = cssIds[formatPoolName(pool)].dailyVolume['d'];
+    const cssIdDailyVolumeMobile = cssIds[formatPoolName(pool)].dailyVolume['m'];
+    setDisplayValueById(cssIdDailyVolumeDesktop, poolVolumeUSD);
+    setDisplayValueById(cssIdDailyVolumeMobile, poolVolumeUSD);
 
     totalDailyVolume += poolVolume;
   }
 
   const totalDailyVolumeInUSD = usdFormatter.format(totalDailyVolume);
-  setDisplayValueById(cssIDDV, totalDailyVolumeInUSD);
+  setDisplayValueById(cssIDDesktopDV, totalDailyVolumeInUSD);
+  setDisplayValueById(cssIDMobileDV, totalDailyVolumeInUSD);
 };
 
 
@@ -268,8 +299,11 @@ const setRewardApyDisplayValue = async (pools, siteData, cssIds) => {
       rewardApy = formatPercentage(noDollarSign(apyWithDollarSign));
     }
 
-    const cssId = cssIds[formatPoolName(pool)].rewardApy;
-    setDisplayValueById(cssId, rewardApy);
+    const cssIdDesktop = cssIds[formatPoolName(pool)].rewardApy['d'];
+    const cssIdMobile = cssIds[formatPoolName(pool)].rewardApy['m'];
+
+    setDisplayValueById(cssIdDesktop, rewardApy);
+    setDisplayValueById(cssIdMobile, rewardApy);
   }
 };
 
