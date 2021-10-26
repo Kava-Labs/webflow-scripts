@@ -68,15 +68,6 @@ const formatPercentage = (value) => {
   return value +"%";
 };
 
-const getModuleBalances = async (hardAccounts) => {
-  const hardAccountCoins = hardAccounts.find(a => a.value.name === 'hard').value.coins;
-  const coins = {};
-  for (const coin of hardAccountCoins) {
-    coins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount };
-  }
-  return coins;
-};
-
 const getRewardPerYearByDenom = async (siteData) => {
   const incentiveParams = siteData['incentiveParams'];
   const hardData = incentiveParams.hard_supply_reward_periods;
@@ -202,16 +193,18 @@ const mapCssIds = (denoms) => {
 
 const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
   const cssId = cssIds['TAV'];
-  const balances = siteData['hardAccount'];
+  const suppliedBalances = siteData['hardTotalSupplied'];
+  const borrowedBalances = siteData['hardTotalBorrowed'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
 
-
   let totalAssetValue = 0;
-  for (const coin in balances) {
-    const currencyAmount = Number(balances[coin].amount)/ denomConversions[coin];
+  for (const coin in suppliedBalances) {
+    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin];
+    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin];
+
     const price = prices[coin].price;
-    totalAssetValue += Number(currencyAmount * price);
+    totalAssetValue += (suppliedCurrencyAmount + borrowedCurrencyAmount) * price;
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
   setDisplayValueById(cssId, totalAssetValueUsd);
@@ -302,14 +295,12 @@ const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
 const updateDisplayValues = async(denoms) => {
   const [
     pricefeedResponse,
-    hardAccountResponse,
     hardTotalSuppliedResponse,
     hardTotalBorrowedResponse,
     incentiveParametersResponse,
     hardInterestRatesResponse
   ] = await Promise.all([
     fetch(`${BASE_URL}/pricefeed/prices`),
-    fetch(`${BASE_URL}/hard/accounts`),
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(`${BASE_URL}/hard/total-borrowed`),
     fetch(`${BASE_URL}/incentive/parameters`),
@@ -320,7 +311,6 @@ const updateDisplayValues = async(denoms) => {
   const cssIds = mapCssIds(denoms);
 
   const pricefeedPrices = await pricefeedResponse.json();
-  const hardAccountJson = await hardAccountResponse.json();
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json();
   const incentiveParamsJson = await incentiveParametersResponse.json();
@@ -332,9 +322,6 @@ const updateDisplayValues = async(denoms) => {
 
   const denomConversions = setConversionFactors(denoms);
   siteData['denomConversions'] = denomConversions;
-
-  const hardAccount = await getModuleBalances(hardAccountJson.result);
-  siteData['hardAccount'] = hardAccount;
 
   const hardTotalSupplied = formatCoins(hardTotalSuppliedJson.result);
   siteData['hardTotalSupplied'] = hardTotalSupplied;
