@@ -576,14 +576,14 @@ const setPriceChangeDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteData, cssIds) => {
-  const usdxBorrowed = siteData['platformAmounts'];
+  const platformAmounts = siteData['platformAmounts'];
   const cdpParamsData = siteData['cdpParamsData'];
 
   for (const denom of denoms) {
     const totalBorrowedCssId = cssIds[denom]['totalBorrowed']
     const borrowLimitCssId = cssIds[denom]['borrowLimit']
 
-    const usdxAmount = usdxBorrowed[denom];
+    const usdxAmount = platformAmounts[denom].principal;
     const usdxLimit = cdpParamsData[denom].debtLimit;
 
     const formattedUsdxAmount = formatMoneyNoDecimalsOrLabels(usdxAmount);
@@ -868,7 +868,7 @@ const updateDisplayValues = async (denoms) => {
   
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
-  
+    
     // set display values
     await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
   
