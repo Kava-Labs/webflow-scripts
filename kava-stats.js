@@ -785,7 +785,7 @@ const updateDisplayValues = async (denoms) => {
       bep3ParamsResponse,
       cdpParamsResponse,
       totalCollateralResponse,
-      totalPrinicalResponse,
+      totalPrincipalResponse,
     ] = await Promise.all([
       fetch(BASE_URL + "pricefeed/prices"),
       fetch(BASE_URL + "incentive/parameters"),
@@ -824,7 +824,7 @@ const updateDisplayValues = async (denoms) => {
     const usdxMarketDataJson = await usdxMarketResponse.json();
     const swpMarketDataJson = await swpMarketResponse.json();
     const totalCollateralJson = await totalCollateralResponse.json(); 
-    const totalPrinicalJson = await totalPrinicalResponse.json(); 
+    const totalPrincipalJson = await totalPrincipalResponse.json(); 
   
   
     const markets = {
@@ -867,7 +867,7 @@ const updateDisplayValues = async (denoms) => {
     const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
     siteData['incentiveParamsData'] = incentiveParamsData;
   
-    const platformAmounts = await mapPlatformAmounts(totalCollateralJson.result, totalPrinicalJson.result); 
+    const platformAmounts = await mapPlatformAmounts(totalCollateralJson.result, totalPrincipalJson.result); 
     siteData['platformAmounts'] = platformAmounts;
     
   
