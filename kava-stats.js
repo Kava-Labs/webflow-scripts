@@ -381,29 +381,6 @@ const mapCdpParams = async (denoms, cdpParamsData) => {
   return coins;
 };
 
-
-// const mapUsdxBorrowed = async (denoms, siteData) => {
-//   const coins = { total: 0 }
-
-//   for (const denom of denoms) {
-//     const cdpParamsData = siteData['cdpParamsData'][denom];
-    
-//     let principal = 0;
-//     if (siteData['platformAmounts'][denom]){
-//       principal = siteData['platformAmounts'][denom].principal;
-//     };
-
-//     let usdxAmount = 0;
-//     if(cdpParamsData && principal) {
-//       const usdxBorrowedAndFees = principal;
-//       usdxAmount = usdxBorrowedAndFees > cdpParamsData.debtLimit ? cdpParamsData.debtLimit : usdxBorrowedAndFees;
-//       coins['total'] += usdxAmount;
-//     }
-//     coins[denom] = usdxAmount;
-//   }
-//   return coins;
-// }
-
 const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   let coins = {}
 
