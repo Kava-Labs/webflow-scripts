@@ -342,74 +342,67 @@ const mapDenomTotalSupplied = async (denoms, siteData) => {
 const mapPlatformAmounts = async (totalCollateral, totalPrincipal) => {
     const coins = {};
       for (const denom of totalCollateral) {
-        coins[denom.collateral_type] = { collateral: denom.amount.amount, principal: 0 }; 
+        const { amount: { amount }, collateral_type } = denom;
+        coins[collateral_type] = {};
+        coins[collateral_type].collateral = amount;
       };
-  
       for (const denom of totalPrincipal) {
-        coins[denom.collateral_type].principal = denom.amount.amount; 
+        const {collateral_type, amount: { amount }} = denom;
+        coins[collateral_type].principal = amount; 
       };
-  
      return coins;
 };
 
-
 const mapCdpParams = async (denoms, cdpParamsData) => {
   const coins = {};
-
   const mappedLimits = {};
   const mappedStabilityFees = {};
   let usdxDebtLimit = 0;
   if(cdpParamsData) {
     for (const denom of cdpParamsData.collateral_params) {
-
       const debtLimit = denom.debt_limit ? Number(denom.debt_limit.amount)/FACTOR_SIX : 0;
       mappedLimits[denom.type] = { debtLimit }
-
       const secondsPerYear = 31536000;
       const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
       mappedStabilityFees[denom.type] = stabilityFeePercentage
-    }
-
+    };
     usdxDebtLimit = Number(cdpParamsData.global_debt_limit.amount)/FACTOR_SIX;
-  }
-
+  };
   for (const denom of denoms) {
     let limit = 0;
-    let stabilityFee = ' ';
-
     if (denom === 'usdx') {
       limit = usdxDebtLimit
     } else {
       let cdpParam = mappedLimits[denom]
       if(cdpParam) { limit = cdpParam.debtLimit }
-    }
-
-    coins[denom] = { debtLimit: limit, stabilityFeePercentage: mappedStabilityFees[denom] }
-  }
+    };
+    coins[denom] = { debtLimit: limit, stabilityFeePercentage: mappedStabilityFees[denom] || '0.00'}
+  };
   return coins;
 };
 
 
-const mapUsdxBorrowed = async (denoms, siteData) => {
-  const coins = { total: 0 }
+// const mapUsdxBorrowed = async (denoms, siteData) => {
+//   const coins = { total: 0 }
 
-  for (const denom of denoms) {
-    const cdpParamsData = siteData['cdpParamsData'][denom];
+//   for (const denom of denoms) {
+//     const cdpParamsData = siteData['cdpParamsData'][denom];
     
-    let platformAmount = 0;
-    if (siteData['platformAmounts'][denom]) platformAmount = siteData['platformAmounts'][denom];
+//     let principal = 0;
+//     if (siteData['platformAmounts'][denom]){
+//       principal = siteData['platformAmounts'][denom].principal;
+//     };
 
-
-    let usdxAmount = 0;
-    if(cdpParamsData && platformAmount) {
-      const usdxBorrowedAndFees = platformAmount.principal;
-      usdxAmount = usdxBorrowedAndFees > cdpParamsData.debtLimit ? cdpParamsData.debtLimit : usdxBorrowedAndFees;
-      coins['total'] += usdxAmount;
-    }
-    coins[denom] = usdxAmount;
-  }
-  return coins;
-}
+//     let usdxAmount = 0;
+//     if(cdpParamsData && principal) {
+//       const usdxBorrowedAndFees = principal;
+//       usdxAmount = usdxBorrowedAndFees > cdpParamsData.debtLimit ? cdpParamsData.debtLimit : usdxBorrowedAndFees;
+//       coins['total'] += usdxAmount;
+//     }
+//     coins[denom] = usdxAmount;
+//   }
+//   return coins;
+// }
 
 const mapIncentiveParams = async (denoms, usdxMintingParams) => {
   let coins = {}
@@ -606,8 +599,8 @@ const setPriceChangeDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteData, cssIds) => {
-  const usdxBorrowed = siteData['usdxBorrowed'];
-  const cdpParamsData = siteData['cdpParamsData']
+  const usdxBorrowed = siteData['platformAmounts'];
+  const cdpParamsData = siteData['cdpParamsData'];
 
   for (const denom of denoms) {
     const totalBorrowedCssId = cssIds[denom]['totalBorrowed']
@@ -880,9 +873,6 @@ const updateDisplayValues = async (denoms) => {
   
     const cdpParamsData = await mapCdpParams(denoms, cdpParamsJson.result);
     siteData['cdpParamsData'] = cdpParamsData
-  
-    const usdxBorrowed = await mapUsdxBorrowed(denoms, siteData)
-    siteData['usdxBorrowed'] = usdxBorrowed;
   
     const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
     siteData['suppliedAmounts'] = suppliedAmounts;
