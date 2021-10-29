@@ -580,12 +580,18 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
   const cdpParamsData = siteData['cdpParamsData'];
 
   for (const denom of denoms) {
-    const totalBorrowedCssId = cssIds[denom]['totalBorrowed']
-    const borrowLimitCssId = cssIds[denom]['borrowLimit']
+    const totalBorrowedCssId = cssIds[denom]['totalBorrowed'];
+    const borrowLimitCssId = cssIds[denom]['borrowLimit'];
 
-    const usdxAmount = platformAmounts[denom].principal;
-    const usdxLimit = cdpParamsData[denom].debtLimit;
-
+    let usdxAmount = '0';
+    let usdxLimit = 0;
+    if (platformAmounts[denom]) {
+      usdxAmount = platformAmounts[denom].principal; 
+    };
+    if (cdpParamsData[denom]) {
+      usdxLimit = cdpParamsData[denom].debtLimit;
+    };
+   
     const formattedUsdxAmount = formatMoneyNoDecimalsOrLabels(usdxAmount);
     const formmatedUsdxLimit = formatMoneyNoDecimalsOrLabels(usdxLimit);
     setDisplayValueById(totalBorrowedCssId, formattedUsdxAmount)
@@ -593,11 +599,12 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
 
     // borrow limit bar
     let rawUsdxUtilization = 0;
-    if(Number(usdxLimit.toFixed(0)) !== 0) {
-      rawUsdxUtilization = Number(usdxAmount.toFixed(0)) / Number(usdxLimit.toFixed(0))
-    }
-    const percentUsdxUtilization = Number(rawUsdxUtilization.toFixed(3) * 100).toFixed(2) + "%";
+    if(usdxLimit !== 0) {
+      rawUsdxUtilization = (Number(usdxAmount) / FACTOR_SIX) / usdxLimit; 
+    };
 
+    const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
+ 
     const element = $(`.percent-line-usdx-${denom}`)
     if (element) { element.css("width", percentUsdxUtilization); }
   }
@@ -868,7 +875,6 @@ const updateDisplayValues = async (denoms) => {
   
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
-    
     // set display values
     await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
   
