@@ -664,7 +664,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
   const denomConversions = siteData['denomConversions'];
   const prices = siteData['prices']; 
   for (const denom in platformAmounts) {
-    let price = 0; 
+    let price = 1; 
     if(prices[denom]) price = prices[denom].price; 
     let denomSupplied = 0;
     if (platformAmounts[denom]) denomSupplied = platformAmounts[denom].collateral;
@@ -867,7 +867,7 @@ const updateDisplayValues = async (denoms) => {
   
     const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
     siteData['supplyData'] = supplyData;
-  
+
     const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
     siteData['bep3SupplyData'] = bep3SupplyData;
   
@@ -904,12 +904,12 @@ const updateDisplayValues = async (denoms) => {
     $(".metric-blur").css("background-color", "transparent")
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"})
-    console.log(siteData)
+
 };
 
 var main = async () => {
   const denoms = [
-    'bnb-a', 'btcb-a', 'busd-a', 'busd-b',
+    'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a'
   ]
