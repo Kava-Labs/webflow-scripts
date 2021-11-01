@@ -664,6 +664,8 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
   const denomConversions = siteData['denomConversions'];
   const prices = siteData['prices']; 
   for (const denom in platformAmounts) {
+    // TEMPORARY FIX
+    if (denom === 'busd-b') continue;
     let price = 1; 
     if(prices[denom]) price = prices[denom].price; 
     let denomSupplied = 0;
@@ -673,6 +675,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
+  console.log(totalAssetsSupplied)
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
