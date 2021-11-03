@@ -172,6 +172,7 @@ var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLocke
   const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
   setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
+  
   return denomTotalSupplyValue
 }
 
@@ -185,7 +186,7 @@ const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
 
     const desktopCssId = cssIds[denom].totalSupplied['d']
     const mobileCssId = cssIds[denom].totalSupplied['m']
-
+    
     setDisplayValueById(desktopCssId, formattedTotalSupplied)
     setDisplayValueById(mobileCssId, formattedTotalSupplied)
   }
@@ -314,7 +315,7 @@ const mapMarketData = async (denoms, marketData) => {
     let priceChangePercent = mappedMarkets[denom] ? mappedMarkets[denom].priceChangePercent : ' '
     prices[denom] = { priceChangePercent: priceChangePercent }
   }
-
+ 
   return prices
 }
 
@@ -322,7 +323,7 @@ const mapDenomTotalSupplied = async (denoms, siteData) => {
   const suppliedAmounts = siteData['suppliedAmounts']
   const denomConversions = siteData['denomConversions']
   const prices = siteData['prices']
-
+ 
   let coins = {}
 
   for (const denom of denoms) {
@@ -335,7 +336,7 @@ const mapDenomTotalSupplied = async (denoms, siteData) => {
 
     coins[denom] = denomTotalSupplyValue
   }
-
+ 
   return coins
 }
 
@@ -536,7 +537,7 @@ const setPriceDisplayValues = async (denoms, siteData, cssIds) => {
     let kavaDefiDesktopCssId = cssIds[denom]['price']['d'];
     let kavaDefiMobileCssId = cssIds[denom]['price']['md'];
     const formattedPrice = usdFormatter.format(price)
-
+    
     setDisplayValueById(kavaLendingCssId, formattedPrice)
     setDisplayValueById(kavaDefiDesktopCssId, formattedPrice)
     setDisplayValueById(kavaDefiMobileCssId, formattedPrice)
@@ -552,7 +553,7 @@ const setPriceChangeDisplayValues = async (denoms, siteData, cssIds) => {
     let kavaDefiMobileCssId = cssIds[denom]['priceChangePercent']['md'];
 
     let formattedChangePercent = noDollarSign(usdFormatter.format(priceChangePercent)) + "%";
-
+    
     if(priceChangePercent > 0) {
       formattedChangePercent =  "+" + formattedChangePercent
       setDisplayColor(kavaLendingCssId, 'green')
@@ -605,7 +606,7 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
- 
+    
     const element = $(`.percent-line-usdx-${denom}`)
     if (element) { element.css("width", percentUsdxUtilization); }
   }
@@ -666,13 +667,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
   
   for (const denom in platformAmounts) {
     let price = 0; 
-    if (denom === 'busd-b') {
-        price = prices['busd-a'].price; 
-        prices['busd-b'] = prices['busd-a'];
-    } else {
-        if(prices[denom]) price = prices[denom].price; 
-    };
-  
+    if(prices[denom]) price = prices[denom].price; 
     let denomSupplied = 0;
     if (platformAmounts[denom]) denomSupplied = platformAmounts[denom].collateral;
     const factor = denomConversions[denom];
@@ -680,7 +675,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
-  
+
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
@@ -698,6 +693,7 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
     totalAssetsBorrowed += denomBorrowedUSD;
   };
   const totalAssetsBorrowedUsd = usdFormatter.format(totalAssetsBorrowed);
+
   setDisplayValueById(cssId, noDollarSign(totalAssetsBorrowedUsd));
 };
 
@@ -713,9 +709,11 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
     total += suppliedDenomUsd
     const desktopCssId = cssIds[denom]['marketCap']['d']
     const mobileCssId = cssIds[denom]['marketCap']['m']
+
     setDisplayValueById(desktopCssId, formatMoneyMillions(suppliedDenomUsd))
     setDisplayValueById(mobileCssId, formatMoneyMillions(suppliedDenomUsd))
   }
+  
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
 }
 
@@ -818,12 +816,13 @@ const updateDisplayValues = async (denoms) => {
     const swpMarketDataJson = await swpMarketResponse.json();
     const totalCollateralJson = await totalCollateralResponse.json(); 
     const totalPrincipalJson = await totalPrincipalResponse.json(); 
-  
+
   
     const markets = {
       'bnb-a': await bnbMarketData,
       'btcb-a': await btcbMarketData,
       'busd-a': await busdMarketData,
+      'busd-b': await busdMarketData,
       'hbtc-a': await btcbMarketData,
       'xrpb-a': await xrpbMarketData,
       'hard-a': await hardMarketData,
@@ -831,7 +830,7 @@ const updateDisplayValues = async (denoms) => {
     }
     // usdx and swp market data comes from a different api so we don't want them to
     // map the same with the other markets
-  
+
     let siteData = {}
     // fix cssIds
     const cssIds = mapCssIds(denoms)
@@ -853,6 +852,7 @@ const updateDisplayValues = async (denoms) => {
   
     const prices = await mapPrices(denoms, pricefeedPrices.result);
     siteData['prices'] = prices;
+    siteData['prices']['busd-b'] = siteData['prices']['busd-a'];
   
     const swpPrice = await setSwpPrice(swpMarketDataJson);
     siteData['prices']['swp-a'] = swpPrice;
@@ -869,7 +869,8 @@ const updateDisplayValues = async (denoms) => {
   
     const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
     siteData['suppliedAmounts'] = suppliedAmounts;
-  
+    siteData['suppliedAmounts']['busd-b'] = siteData['suppliedAmounts']['busd-a'];
+
     const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData)
     siteData['totalSuppliedData'] = totalSuppliedData;
   
@@ -909,15 +910,18 @@ const updateDisplayValues = async (denoms) => {
   
     await setSupplyDisplayValues(denoms, siteData, cssIds)
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
+  
     $(".metric-blur").css("background-color", "transparent")
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"})
 
 };
 
+
+
 var main = async () => {
   const denoms = [
-    'bnb-a', 'btcb-a', 'busd-a', 'busd-b',
+    'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a'
   ]
