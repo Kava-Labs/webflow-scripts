@@ -663,11 +663,16 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
   const platformAmounts = siteData['platformAmounts'];
   const denomConversions = siteData['denomConversions'];
   const prices = siteData['prices']; 
+  
   for (const denom in platformAmounts) {
-    // TEMPORARY FIX
-    if (denom === 'busd-b') continue;
-    let price = 1; 
-    if(prices[denom]) price = prices[denom].price; 
+    let price = 0; 
+    if (denom === 'busd-b') {
+        price = prices['busd-a'].price; 
+        prices['busd-b'] = prices['busd-a'];
+    } else {
+        if(prices[denom]) price = prices[denom].price; 
+    };
+  
     let denomSupplied = 0;
     if (platformAmounts[denom]) denomSupplied = platformAmounts[denom].collateral;
     const factor = denomConversions[denom];
@@ -675,7 +680,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
-  console.log(totalAssetsSupplied)
+  
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
@@ -912,7 +917,7 @@ const updateDisplayValues = async (denoms) => {
 
 var main = async () => {
   const denoms = [
-    'bnb-a', 'btcb-a', 'busd-a',
+    'bnb-a', 'btcb-a', 'busd-a', 'busd-b',
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a'
   ]
