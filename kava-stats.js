@@ -670,12 +670,12 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     if(prices[denom]) price = prices[denom].price; 
     let denomSupplied = 0;
     if (platformAmounts[denom]) denomSupplied = platformAmounts[denom].collateral;
-    const factor = denomConversions[denom];
+    let factor = FACTOR_EIGHT;
+    if (denomConversions[denom]) factor = denomConversions[denom];
     const denomSuppliedUSD = (denomSupplied * price) / factor;
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
-
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
