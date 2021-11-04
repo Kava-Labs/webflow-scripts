@@ -115,13 +115,13 @@ const formatRewardDenom = (denom) => {
   return formattedDenom;
 }
 
-var formatMoneyMillions = (v) => {
+const formatMoneyMillions = (v) => {
   const valueBorrowedInMil = v/FACTOR_SIX
   const valueBorrowedFormatted = usdFormatter.format(valueBorrowedInMil)
   return valueBorrowedFormatted + "M"
 }
 
-var formatMoneyNoDecimalsOrLabels = (v) => {
+const formatMoneyNoDecimalsOrLabels = (v) => {
   const fm = usdFormatter.format(v)
   return fm.slice(1, fm.length-3)
 }
@@ -130,11 +130,11 @@ const noDollarSign = (value) => {
   return value.slice(1, value.length);
 }
 
-var isKavaNativeAsset = (d) => {
+const isKavaNativeAsset = (d) => {
   return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp-a'].includes(d)
 }
 
-var denomLabel = (v) => {
+const denomLabel = (v) => {
   switch(v) {
     case 'xrpb-a':
       return 'XRP'
@@ -147,17 +147,17 @@ var denomLabel = (v) => {
   }
 }
 
-var bnbAmountOnPlatform = (data) => {
+const bnbAmountOnPlatform = (data) => {
   const denomData = data.result.find((d) => d.current_supply.denom === 'bnb')
   return Number(denomData.current_supply.amount)
 }
 
-var totalAmountOnPlatformByDenom = (data, denom) => {
+const totalAmountOnPlatformByDenom = (data, denom) => {
   const denomData = data.result.find((d) => d.denom === denom)
   return Number(denomData.amount)
 }
 
-var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
+const supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
   const assetParams = bep3ParamsDataOld.result.asset_params;
 
   const denomParams = assetParams.find(
@@ -168,7 +168,7 @@ var supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit)/FACTOR_EIGHT) : 0
 };
 
-var setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
+const setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
   const denomTotalSupplyCoin = denomSupplyFromAcct/factor;
   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
   setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
@@ -601,7 +601,7 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
 
     // borrow limit bar
     let rawUsdxUtilization = 0;
-    if(usdxLimit !== 0) {
+    if (usdxLimit !== 0) {
       rawUsdxUtilization = (Number(usdxAmount) / FACTOR_SIX) / usdxLimit; 
     };
 
@@ -717,7 +717,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
 }
 
-var setDenomTotalSupplyValue = async (supplyDataOld, denomPrice, platformDenom) => {
+const setDenomTotalSupplyValue = async (supplyDataOld, denomPrice, platformDenom) => {
   let denomTotalSupply;
   platformDenom === 'bnb' ?
     denomTotalSupply = bnbAmountOnPlatform(supplyDataOld) :
@@ -910,27 +910,22 @@ const updateDisplayValues = async (denoms) => {
   
     await setSupplyDisplayValues(denoms, siteData, cssIds)
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
-  
     $(".metric-blur").css("background-color", "transparent")
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"})
-
 };
 
-
-
-var main = async () => {
+const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp-a'
-  ]
-
+    'ukava-a', 'usdx', 'swp-a',
+  ];
   await updateDisplayValues(denoms);
   await sleep(30000);
-  main()
-}
+  main();
+};
 
-var sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); }
+const sleep = (ms = 10000) => new Promise(resolve => setTimeout(resolve, ms));
 
 main();
