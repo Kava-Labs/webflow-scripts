@@ -616,7 +616,6 @@ const updateDisplayValues = async (denoms) => {
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
-  console.log(siteData)
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
