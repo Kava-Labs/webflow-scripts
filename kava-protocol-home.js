@@ -80,7 +80,7 @@ const displayInThousands = (value) => {
 }
 
 const isKavaNativeAsset = (denom) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a'].includes(denom)
+  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp-a'].includes(denom)
 }
 
 const formatCssId = (value, denom) => {
@@ -162,36 +162,22 @@ const mapSuppliedAmounts = (denoms, coins) => {
   return formattedCoins
 }
 
-const mapPlatformAmounts = async (denoms, platformAmounts) => {
+const mapPlatformAmounts = async (totalCollateral, totalPrincipal) => {
   const coins = {};
-
-  for (const denom of denoms) {
-    const coin = { locked: 0, borrowed: 0, fees: 0 };
-    const platformAmount = platformAmounts[denom];
-
-    if(platformAmount) {
-      const { collateral, principal, accumulated_fees } = platformAmount.reduce(function(accumulator, item) {
-        Object.keys(item.cdp).forEach(function(key) {
-          let c = ['collateral', 'principal', 'accumulated_fees'];
-          if(c.includes(key)){
-            accumulator[key] = Number((accumulator[key] || 0)) + Number(item.cdp[key].amount);
-          }
-        });
-        return accumulator;
-      }, {});
-
-      coin['locked'] = isKavaNativeAsset(denom) ? Number(collateral/FACTOR_SIX) : Number(collateral/FACTOR_EIGHT)
-      coin['borrowed'] = Number(principal/FACTOR_SIX)
-      coin['fees'] = Number(accumulated_fees/FACTOR_SIX)
-    }
-    coins[denom] = coin;
-  }
-  return coins;
+      for (const denom of totalCollateral) {
+        const { amount: { amount }, collateral_type } = denom;
+        coins[collateral_type] = {};
+        coins[collateral_type].collateral = amount;
+      };
+      for (const denom of totalPrincipal) {
+        const {collateral_type, amount: { amount }} = denom;
+        coins[collateral_type].principal = amount; 
+      };
+     return coins;
 };
 
 const mapBep3Supplies = async (denoms, bep3SupplyData) => {
   const coins = {};
-
   const mappedBep3Supplies = {};
   for (const denom of bep3SupplyData) {
     const currentSupply = denom.current_supply;
@@ -238,6 +224,7 @@ const mapTotalSupplied = async (denoms, siteData) => {
   const suppliedAmountData = siteData['suppliedAmounts'];
   const denomConversions = siteData['denomConversions'];
   for(const denom of denoms) {
+
     const denomPrice = siteData['prices'][denom].price;
 
     let denomTotalSupply;
@@ -255,7 +242,7 @@ const mapTotalSupplied = async (denoms, siteData) => {
 
     coins[denom] = denomTotalSupplyUsdValue;
   }
-
+ 
   return coins;
 };
 
@@ -312,15 +299,13 @@ const mapPrices = async (denoms, pricefeedResult) => {
 };
 
 const mapUsdxBorrowed = async (denoms, siteData) => {
-  const coins = { total: 0 }
-
+  const coins = { total: 0 };
   for (const denom of denoms) {
     const cdpParamsData = siteData['cdpParamsData'][denom];
     const platformData = siteData['platformAmounts'][denom];
-
     let usdxAmount = 0;
     if(cdpParamsData && platformData) {
-      const usdxBorrowedAndFees = platformData.borrowed + platformData.fees;
+      const usdxBorrowedAndFees = Number(platformData.principal / FACTOR_SIX);
       usdxAmount = usdxBorrowedAndFees > cdpParamsData.debtLimit ? cdpParamsData.debtLimit : usdxBorrowedAndFees;
       coins['total'] += usdxAmount;
     }
@@ -425,10 +410,10 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
   const denomConversions = siteData['denomConversions']
 
   for (const denom of denoms) {
-
+    if (denom === 'usdx') continue; 
     const denomPrice = siteData['prices'][denom].price;
     const cssId = cssIds[denom]['apy'];
-    const lockedAmount = siteData['platformAmounts'][denom].locked;
+    const lockedAmount = siteData['platformAmounts'][denom].collateral;
     const usdxMintingRewards = siteData['incentiveParamsData'][denom]
 
     let rewardsDenom = commonDenomMapper(usdxMintingRewards.denom);
@@ -551,6 +536,8 @@ const updateDisplayValues = async (denoms) => {
     hardCdpResponse,
     hbtcCdpResponse,
     hardTotalSuppliedResponse,
+    totalCollateralResponse,
+    totalPrincipalResponse,
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
@@ -565,6 +552,8 @@ const updateDisplayValues = async (denoms) => {
     fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
     fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
     fetch(`${BASE_URL}/hard/total-deposited`),
+    fetch(BASE_URL + '/cdp/totalCollateral'),
+    fetch(BASE_URL + '/cdp/totalPrincipal'),
   ]);
   const pricefeedPrices = await pricefeedResponse.json()
 
@@ -580,16 +569,19 @@ const updateDisplayValues = async (denoms) => {
   const hardPlatformAmountsJson = await hardCdpResponse.json();
   const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
+  const totalCollateralJson = await totalCollateralResponse.json(); 
+  const totalPrincipalJson = await totalPrincipalResponse.json(); 
 
-  const platformAmounts = {
-    'bnb-a': await bnbPlatformAmountsJson.result,
-    'btcb-a': await btcPlatformAmountsJson.result,
-    'busd-a': await busdPlatformAmountsJson.result,
-    'hbtc-a': await hbtcPlatformAmountsJson.result,
-    'xrpb-a': await xrpPlatformAmountsJson.result,
-    'hard-a': await hardPlatformAmountsJson.result,
-    'ukava-a': await ukavaPlatformAmountsJson.result
-  }
+  // const platformAmounts = {
+  //   'bnb-a': await bnbPlatformAmountsJson.result,
+  //   'btcb-a': await btcPlatformAmountsJson.result,
+  //   'busd-a': await busdPlatformAmountsJson.result,
+  //   'hbtc-a': await hbtcPlatformAmountsJson.result,
+  //   'xrpb-a': await xrpPlatformAmountsJson.result,
+  //   'hard-a': await hardPlatformAmountsJson.result,
+  //   'ukava-a': await ukavaPlatformAmountsJson.result,
+  
+  // }
 
   let siteData = {}
   const cssIds = mapCssIds(denoms)
@@ -606,8 +598,8 @@ const updateDisplayValues = async (denoms) => {
   const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
   siteData['incentiveParamsData'] = incentiveParamsData;
 
-  const platformData = await mapPlatformAmounts(denoms, platformAmounts)
-  siteData['platformAmounts'] = platformData
+    const platformAmounts = await mapPlatformAmounts(totalCollateralJson.result, totalPrincipalJson.result); 
+    siteData['platformAmounts'] = platformAmounts;
 
   const cdpParamsData = await mapUsdxLimits(denoms, cdpParamsJson.result);
   siteData['cdpParamsData'] = cdpParamsData
@@ -635,7 +627,7 @@ const updateDisplayValues = async (denoms) => {
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
-
+  console.log(siteData)
   // set display values
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
@@ -661,7 +653,7 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx'
+    'ukava-a', 'usdx', 'swp-a',
   ]
 
   await updateDisplayValues(denoms);
