@@ -593,7 +593,6 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
       usdxLimit = cdpParamsData[denom].debtLimit;
     };
     
-
     const formattedUsdxAmount = formatMoneyNoDecimalsOrLabels((Number(usdxAmount) / FACTOR_SIX));
     const formmatedUsdxLimit = formatMoneyNoDecimalsOrLabels(usdxLimit);
     setDisplayValueById(totalBorrowedCssId, formattedUsdxAmount)
@@ -638,7 +637,6 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
     let rewardsDenom = commonDenomMapper(usdxMintingRewards.denom);
     let rewardsAmountPerSecond = usdxMintingRewards.amount;
 
-
     const denomValueLocked = denomPrice * collateral;
 
     // 31536000 seconds in a year
@@ -655,8 +653,8 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
 
     setDisplayValueById(desktopCssId, commaSeparatedPercentDisplay + "%")
     setDisplayValueById(mobileCssId, commaSeparatedPercentDisplay + "%")
-  }
-}
+  };
+};
 
 const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
   let cssId = cssIds['totalAssetsSupplied'];
@@ -686,9 +684,13 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
   const prices = siteData['prices']; 
   for (const denom in platformAmounts) {
     let price = 0; 
-    if(prices[denom]) price = prices[denom].price; 
+    if(prices[denom]) {
+      price = prices[denom].price; 
+    };
     let denomBorrowed = 0;
-    if (platformAmounts[denom]) denomBorrowed = platformAmounts[denom].principal;
+    if (platformAmounts[denom]) {
+      denomBorrowed = platformAmounts[denom].principal;
+    }; 
     const denomBorrowedUSD = denomBorrowed / FACTOR_SIX;
     totalAssetsBorrowed += denomBorrowedUSD;
   };
@@ -758,7 +760,6 @@ const setDisplayValueById = (cssId, value) => {
 };
 
 const updateDisplayValues = async (denoms) => {
-
     const [
       pricefeedResponse,
       incentiveParamsResponse,
@@ -803,9 +804,7 @@ const updateDisplayValues = async (denoms) => {
     const supplyTotalJson = await supplyTotalResponse.json()
     const bep3SupplyJson = await bep3SupplyResponse.json();
     const bep3ParamsJson = await bep3ParamsResponse.json()
-  
     const cdpParamsJson = await cdpParamsResponse.json();
-  
     const bnbMarketData = await bnbMarketResponse.json();
     const btcbMarketData = await btcbMarketResponse.json();
     const busdMarketData = await busdMarketResponse.json();
@@ -817,7 +816,6 @@ const updateDisplayValues = async (denoms) => {
     const totalCollateralJson = await totalCollateralResponse.json(); 
     const totalPrincipalJson = await totalPrincipalResponse.json(); 
 
-  
     const markets = {
       'bnb-a': await bnbMarketData,
       'btcb-a': await btcbMarketData,
@@ -830,84 +828,56 @@ const updateDisplayValues = async (denoms) => {
     }
     // usdx and swp market data comes from a different api so we don't want them to
     // map the same with the other markets
-
     let siteData = {}
     // fix cssIds
-    const cssIds = mapCssIds(denoms)
-  
-    const denomConversions = setConversionFactors(denoms)
+    const cssIds = mapCssIds(denoms);
+    const denomConversions = setConversionFactors(denoms);
     siteData['denomConversions'] = denomConversions;
-  
-    const rewardsStartDates = setRewardsDates(denoms)
+    const rewardsStartDates = setRewardsDates(denoms);
     siteData['rewardsStartDates'] = rewardsStartDates;
-  
-    const marketData = await mapMarketData(denoms, markets)
+    const marketData = await mapMarketData(denoms, markets);
     siteData['marketData'] = marketData;
-  
-    const usdxMarketData = await mapCoinGeckoApiData(usdxMarketDataJson)
+    const usdxMarketData = await mapCoinGeckoApiData(usdxMarketDataJson);
     siteData['marketData']['usdx']['priceChangePercent'] = usdxMarketData;
-  
     const swpMarketData = await mapCoinGeckoApiData(swpMarketDataJson)
     siteData['marketData']['swp-a']['priceChangePercent'] = swpMarketData;
-  
     const prices = await mapPrices(denoms, pricefeedPrices.result);
     siteData['prices'] = prices;
     siteData['prices']['busd-b'] = siteData['prices']['busd-a'];
-  
     const swpPrice = await setSwpPrice(swpMarketDataJson);
     siteData['prices']['swp-a'] = swpPrice;
-  
     const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
     siteData['incentiveParamsData'] = incentiveParamsData;
-  
     const platformAmounts = await mapPlatformAmounts(totalCollateralJson.result, totalPrincipalJson.result); 
     siteData['platformAmounts'] = platformAmounts;
-    
-  
     const cdpParamsData = await mapCdpParams(denoms, cdpParamsJson.result);
     siteData['cdpParamsData'] = cdpParamsData
-  
     const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
     siteData['suppliedAmounts'] = suppliedAmounts;
     siteData['suppliedAmounts']['busd-b'] = siteData['suppliedAmounts']['busd-a'];
-
     const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData)
     siteData['totalSuppliedData'] = totalSuppliedData;
-  
     const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
     siteData['supplyData'] = supplyData;
-
     const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
     siteData['bep3SupplyData'] = bep3SupplyData;
-  
     const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
     siteData['bep3ParamsData'] = bep3ParamsData;
-  
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
     // set display values
     await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
-  
     await setPriceDisplayValues(denoms, siteData, cssIds)
-  
     await setPriceChangeDisplayValues(denoms, siteData, cssIds)
-  
     await setTotalBorrowedBorrowLimitAndLimitBarDisplayValues(denoms, siteData, cssIds)
-  
     await setRewardsApyDisplayValues(denoms, siteData, cssIds)
-  
     await setAssetLimitDisplayValues(denoms, siteData, cssIds)
-  
     await setAssetLimitUsdxDisplayValue(denoms, siteData, cssIds)
-  
     await setDenomTotalSuppliedDisplayValues(denoms, siteData, cssIds)
-  
     // denoms not needed here since totalSupplieData has already looped through the denoms
     await setTotalAssetsSuppliedDisplayValue(siteData, cssIds)
     await setTotalAssetsBorrowedDisplayValue(siteData, cssIds)
-  
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
-  
     await setSupplyDisplayValues(denoms, siteData, cssIds)
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
     $(".metric-blur").css("background-color", "transparent")
@@ -925,7 +895,5 @@ const main = async () => {
   await sleep(30000);
   main();
 };
-
 const sleep = (ms = 10000) => new Promise(resolve => setTimeout(resolve, ms));
-
 main();
