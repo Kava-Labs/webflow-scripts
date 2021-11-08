@@ -572,17 +572,6 @@ const updateDisplayValues = async (denoms) => {
   const totalCollateralJson = await totalCollateralResponse.json(); 
   const totalPrincipalJson = await totalPrincipalResponse.json(); 
 
-  // const platformAmounts = {
-  //   'bnb-a': await bnbPlatformAmountsJson.result,
-  //   'btcb-a': await btcPlatformAmountsJson.result,
-  //   'busd-a': await busdPlatformAmountsJson.result,
-  //   'hbtc-a': await hbtcPlatformAmountsJson.result,
-  //   'xrpb-a': await xrpPlatformAmountsJson.result,
-  //   'hard-a': await hardPlatformAmountsJson.result,
-  //   'ukava-a': await ukavaPlatformAmountsJson.result,
-  
-  // }
-
   let siteData = {}
   const cssIds = mapCssIds(denoms)
 
