@@ -605,7 +605,6 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    
     const element = $(`.percent-line-usdx-${denom}`)
     if (element) { element.css("width", percentUsdxUtilization); }
   }
@@ -878,7 +877,7 @@ const updateDisplayValues = async (denoms) => {
     await setTotalAssetsSuppliedDisplayValue(siteData, cssIds)
     await setTotalAssetsBorrowedDisplayValue(siteData, cssIds)
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
-    await setSupplyDisplayValues(denoms, siteData, cssIds)
+    await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
     $(".metric-blur").css("background-color", "transparent")
     $(".metric-blur").addClass('without-after');
