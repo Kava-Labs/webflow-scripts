@@ -1,7 +1,7 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://api.kava.io";
-
+const BASE_URL = "https://api.testnet.kava.io/";
+const SWAP_POOL_URL = 'https://swap-data-testnet.kava.io/v1/pools/internal';
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -95,6 +95,64 @@ const commonDenomMapper = (denom) => {
   }
   return formattedDenom;
 }
+const cache = new Map(); 
+const ibcDenomMapper = async (denom) => {
+  if (!denom.includes("ibc")) return;
+  if (cache.has(denom)) {
+    return cache.get(denom);  
+  };
+  const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
+  const ibcDenom = await request.json();
+  cache.set(denom, ibcDenom.denom_trace.base_denom);
+  return ibcDenom.denom_trace.base_denom; 
+}; 
+
+const normalizeSwpPool = async (swpPoolList) => {
+  const readable = []; 
+  for (const {name, coins, total_shares} of swpPoolList){
+    if (name.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(name.replace(":usdx", "")); 
+      const parsedCoins = [];
+      // goes over the coins invloved in the swap pool
+      for (const {denom, amount} of coins){
+        if (denom.includes('ibc')){
+          const parsedDenom = await ibcDenomMapper(denom); 
+          parsedCoins.push({denom: parsedDenom, amount});
+        } else {
+            parsedCoins.push({denom, amount});
+        }
+      };
+      // push the human readable swap pool denoms 
+      readable.push({name: parsedDenom + ":usdx", coins: parsedCoins, total_shares});
+    } else {
+      readable.push({name, coins, total_shares});
+    }
+  };
+  return readable;
+}; 
+const normalizeSwpPoolVolume = async (swpPoolList) => {
+  const readable = []; 
+  for (const {name, volume} of swpPoolList){
+    if (name.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(name.replace(":usdx", "")); 
+      const parsedCoins = [];
+      // goes over the coins invloved in the swap pool
+      for (const {denom, amount} of volume){
+        if (denom.includes('ibc')){
+          const parsedDenom = await ibcDenomMapper(denom); 
+          parsedCoins.push({denom: parsedDenom, amount});
+        } else {
+            parsedCoins.push({denom, amount});
+        }
+      };
+      // push the human readable swap pool denoms 
+      readable.push({name: parsedDenom + ":usdx", volume: parsedCoins});
+    } else {
+      readable.push({name, volume});
+    }
+  };
+  return readable;
+}; 
 
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
@@ -113,9 +171,9 @@ const mapPrices = async (denoms, pricefeedResult) => {
   }
 
   for (const denom of denoms) {
-    let mappedPrice = mappedPrices[denom];
+    // || helps when there is a u in front of the ibc denom it will strip the u and look for it 
+    let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)];
     let price = { price: 0 };
-
     if (mappedPrice) {
       price = { price: mappedPrice.price };
     }
@@ -124,6 +182,26 @@ const mapPrices = async (denoms, pricefeedResult) => {
   return prices;
 };
 
+const normalizeCollateralTypes = async (params, isPool = false) => {
+  const readableParams = []; 
+  for (const param of params){
+    if (param.collateral_type.includes("ibc")){
+      let readableCollateralType;
+      if (isPool){
+        readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
+      } 
+      else {
+        readableCollateralType = await ibcDenomMapper(param.collateral_type);
+      }
+    
+      readableParams.push({...param, collateral_type: readableCollateralType});
+    } else {
+      readableParams.push(param); 
+    };
+  };
+  return readableParams; 
+}; 
+
 const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
@@ -131,7 +209,6 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
   const coins = swpPoolDataJson.result.reduce((coinMap, pool) => {
     const nonUsdxAsset = findNonUsdxTokenInPool(pool);
     const usdxAsset = findUsdxTokenInPool(pool);
-
     const formattedNonUsdxDenom = commonDenomMapper(nonUsdxAsset.denom);
 
     const factor = denomConversions[formattedNonUsdxDenom];
@@ -319,7 +396,7 @@ const updateDisplayValues = async(denoms, pools) => {
     fetch(`${BASE_URL}/incentive/parameters`),
     fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     fetch(`${BASE_URL}/swap/pools`),
-    fetch('https://swap-data.kava.io/v1/pools/internal'),
+    fetch(SWAP_POOL_URL),
   ]);
 
   const swpMarketJson = await swpMarketResponse.json();
@@ -331,18 +408,24 @@ const updateDisplayValues = async(denoms, pools) => {
 
   const pricefeedPrices = await pricefeedResponse.json();
   const incentiveParamsJson = await incentiveParametersResponse.json();
-
   const prices = await mapPrices(denoms, pricefeedPrices.result);
   siteData['prices'] = prices;
 
   const denomConversions = setConversionFactors(denoms);
   siteData['denomConversions'] = denomConversions;
 
-  const incentiveParams = await incentiveParamsJson.result;
+  const incentiveParams = incentiveParamsJson.result;
+  
+  incentiveParams['hard_supply_reward_periods'] = await normalizeCollateralTypes(incentiveParams['hard_supply_reward_periods']);
+  incentiveParams['swap_reward_periods'] = await normalizeCollateralTypes(incentiveParams['swap_reward_periods'], true);
   siteData['incentiveParams'] = incentiveParams;
+
 
   const swpPrice = await setSwpPrice(swpMarketJson.market_data);
   siteData['prices']['swp-a'] = swpPrice;
+  
+  const parsedSwpData = await normalizeSwpPool(swpPoolDataJson.result);
+  swpPoolDataJson.result = parsedSwpData; 
 
   const swpPoolData = await mapSwpPoolData(denoms, siteData, swpPoolDataJson);
   siteData['swpPoolData'] = swpPoolData;
@@ -350,29 +433,32 @@ const updateDisplayValues = async(denoms, pools) => {
   const swpRewardsPerYearByPool = await getRewardsPerYearByPool(siteData);
   siteData['swpRewardsPerYearByPool'] = swpRewardsPerYearByPool;
 
-  const swpVolumesByPoolInUSD = await getVolumesByPool(swpPoolVolumeJson, siteData);
+
+  const swpVolumesByPoolInUSD = await getVolumesByPool(await normalizeSwpPoolVolume(swpPoolVolumeJson), siteData);
   siteData['swpVolumesByPoolInUSD'] = swpVolumesByPoolInUSD;
 
   await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
   await setDailyVolumesDisplayValues(siteData, cssIds);
-
-  $(".metric-blur").css("background-color", "transparent");
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"});
+  
+  // $(".metric-blur").css("background-color", "transparent");
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({"display": "block", "text-align": "center"});
 }
 
 const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a', 'swp-a'
+    'ukava-a', 'swp-a', 'uakt-a',
+    'luna-a', 'uosmo-a', 'uatom-a'
   ];
 
   const pools = [
     'bnb-usdx', 'btcb-usdx', 'busd-usdx',
-    'usdx-xrpb', 'hard-usdx',
-    'ukava-usdx', 'swp-usdx'
+    'usdx-xrpb', 'hard-usdx', 'uakt-usdx',
+    'ukava-usdx', 'swp-usdx', 'luna-usdx',
+    'uosmo-usdx', 'uatom-usdx',
   ];
 
   await updateDisplayValues(denoms, pools);
