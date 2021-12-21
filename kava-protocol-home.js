@@ -80,7 +80,7 @@ const displayInThousands = (value) => {
 }
 
 const isKavaNativeAsset = (denom) => {
-  return ['ukava-a', 'usdx', 'hard', 'ukava', 'hard-a', 'swp-a'].includes(denom)
+  return ['ukava-a', 'usdx', 'hard', 'ukava','kava-a', 'hard-a', 'swp-a'].includes(denom)
 }
 
 const formatCssId = (value, denom) => {
@@ -284,7 +284,8 @@ const mapTotalSupplied = async (denoms, siteData) => {
     if (isKavaNativeAsset(denom)) {
       denomTotalSupply = suppliedAmountData[denom].amount;
     } else {
-      denomTotalSupply = bep3SupplyData[denom];
+      // denomTotalSupply = bep3SupplyData[denom];
+      denomTotalSupply = suppliedAmountData[denom].amount;
     }
     const factor = denomConversions[denom]
     const denomTotalSupplyUsdValue =  Number((denomTotalSupply/factor) * denomPrice)
@@ -355,7 +356,7 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
   const coins = { total: 0 };
   for (const denom of denoms) {
     const cdpParamsData = siteData['cdpParamsData'][denom];
-    const platformData = siteData['platformAmounts'][denom];
+    const platformData = siteData['platformAmounts'][denom] || siteData['platformAmounts'][denom.slice(1)];
     let usdxAmount = 0;
     if(cdpParamsData && platformData) {
       const usdxBorrowedAndFees = Number(platformData.principal / FACTOR_SIX);
@@ -466,10 +467,11 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
   const denomConversions = siteData['denomConversions']
 
   for (const denom of denoms) {
-    if (denom === 'usdx') continue; 
+    if (denom === 'usdx' || denom.includes("bnb") || denom.includes("xrp") || denom.includes("hbtc") || denom.includes("btc") || denom.includes("busd")) continue; 
+   
     const denomPrice = siteData['prices'][denom].price;
     const cssId = cssIds[denom]['apy'];
-    const lockedAmount = siteData['platformAmounts'][denom].collateral;
+    const lockedAmount = siteData['platformAmounts'][denom]?.collateral || siteData['platformAmounts'][denom.slice(1)].collateral;
     const usdxMintingRewards = siteData['incentiveParamsData'][denom]
 
     let rewardsDenom = commonDenomMapper(usdxMintingRewards.denom);
@@ -705,7 +707,7 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'kava-a', 'usdx', 'swp-a', 'swp-a',
+    'kava-a', 'usdx', 'swp-a',
     'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
   ]
 
