@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6)
 const FACTOR_EIGHT = Number(10 ** 8)
-const BASE_URL = "https://api.kava.io/";
+const BASE_URL = "https://api.testnet.kava.io/";
 const BINANACE_URL = "https://api.binance.com/api/v3/"
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
@@ -77,6 +77,31 @@ const commonDenomMapper = (denom) => {
   }
   return formattedDenom
 }
+// gets the human readable ibc denom and saves it in a map so we don't keep requesting it 
+const cache = new Map(); 
+const ibcDenomMapper = async (denom) => {
+  if (!denom.includes("ibc")) return;
+  if (cache.has(denom)) {
+    return cache.get(denom);  
+  };
+  const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
+  const ibcDenom = await request.json();
+  cache.set(denom, ibcDenom.denom_trace.base_denom);
+  return ibcDenom.denom_trace.base_denom; 
+}; 
+
+const normalizeDenoms = async (denomsList) => {
+  const readable = []; 
+  for (let {denom, amount} of denomsList){
+    if (denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(denom); 
+      readable.push({denom: parsedDenom, amount});
+    } else {
+      readable.push({denom, amount});
+    }
+  };
+  return readable;
+}; 
 
 const emptyCoin = (denom) => { return { denom, amount: 0 } }
 
@@ -281,17 +306,16 @@ const mapPrices = async (denoms, pricefeedResult) => {
   for (const price of nonThirtyPrices) {
     const priceName = price.market_id.split(":")[0]
     mappedPrices[commonDenomMapper(priceName)] = { price: Number(price.price)}
-
+    
     // hbtc doesn't have it's own price, it just uses btc's price
     if (commonDenomMapper(priceName) === 'btcb-a') {
       mappedPrices['hbtc-a'] = { price: Number(price.price)}
     }
   }
-
   for ( const denom of denoms) {
-    let mappedPrice = mappedPrices[denom]
-    let price = { price: 0 }
-
+    // || helps when there is a u in front of the ibc denom it will strip the u and look for it 
+    let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)];
+    let price = { price: 0 };
     if(mappedPrice) {
       price = { price: mappedPrice.price }
     }
@@ -411,13 +435,12 @@ const mapSuppliedAmounts = (denoms, coins) => {
 
   let mappedCoins = {}
   for (const coin of coins) {
-    mappedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount }
+    mappedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount };
   }
 
   for(const denom of denoms) {
     let coin = emptyCoin(denom);
-
-    const accountCoin = mappedCoins[denom]
+    const accountCoin = mappedCoins[denom];
     if(accountCoin) {
       coin = { denom: commonDenomMapper(accountCoin.denom), amount: Number(accountCoin.amount) }
     }
@@ -605,8 +628,8 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    const element = $(`.percent-line-usdx-${denom}`)
-    if (element) { element.css("width", percentUsdxUtilization); }
+    // const element = $(`.percent-line-usdx-${denom}`)
+    // if (element) { element.css("width", percentUsdxUtilization); }
   }
 }
 
@@ -755,18 +778,44 @@ const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setDisplayColor = (cssId, color) => {
-  $(`#${cssId}`).css({ color: color });
+  // $(`#${cssId}`).css({ color: color });
 }
 
 const setDisplayValueById = (cssId, value) => {
-  const lastElement = $(`#${cssId}`).last();
-  const firstElement = $(`#${cssId}`).first();
-  if (lastElement) { lastElement.html(value) }
-  if (firstElement) { firstElement.html(value) }
+  // const lastElement = $(`#${cssId}`).last();
+  // const firstElement = $(`#${cssId}`).first();
+  // if (lastElement) { lastElement.html(value) }
+  // if (firstElement) { firstElement.html(value) }
 };
 
 const updateDisplayValues = async (denoms) => {
-    const [
+  const data = {
+    pricefeedResponse : () => fetch(BASE_URL + "pricefeed/prices"),
+    incentiveParamsResponse: () => fetch(BASE_URL + "incentive/parameters"),
+    kavaMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=KAVAUSDT"),
+    hardMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=HARDUSDT"),
+    bnbMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=BNBUSDT"),
+    busdMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=BUSDUSDT"),
+    btcbMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
+    xrpbMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
+    usdxMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/usdx'),
+    swpMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
+    supplyAccountResponse: () => fetch(BASE_URL + 'bank/balances/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
+    supplyTotalResponse: () => fetch(BASE_URL + "bank/total"),
+    bep3SupplyResponse: () => fetch(BASE_URL + "bep3/supplies"),
+    bep3ParamsResponse: () => fetch(BASE_URL + "bep3/parameters"),
+    cdpParamsResponse: () => fetch(BASE_URL + "cdp/parameters"),
+    totalCollateralResponse: () => fetch(BASE_URL + '/cdp/totalCollateral'),
+    totalPrincipalResponse: () => fetch(BASE_URL + '/cdp/totalPrincipal'),
+  };
+  const makeData = async ()=> {
+    const results = Object.keys(data).map((request) => ({reqKey : request, reqVal: data[request]()}));
+    for(let i = 0; i < results.length; ++i){
+      data[results[i].reqKey] = await results[i].reqVal;
+    }
+    return data;
+  };
+    const {
       pricefeedResponse,
       incentiveParamsResponse,
       kavaMarketResponse,
@@ -783,27 +832,10 @@ const updateDisplayValues = async (denoms) => {
       bep3ParamsResponse,
       cdpParamsResponse,
       totalCollateralResponse,
-      totalPrincipalResponse,
-    ] = await Promise.all([
-      fetch(BASE_URL + "pricefeed/prices"),
-      fetch(BASE_URL + "incentive/parameters"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=KAVAUSDT"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=HARDUSDT"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=BNBUSDT"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=BUSDUSDT"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=BTCUSDT"),
-      fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
-      fetch('https://api.coingecko.com/api/v3/coins/usdx'),
-      fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
-      fetch(BASE_URL + 'auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
-      fetch(BASE_URL + "supply/total"),
-      fetch(BASE_URL + "bep3/supplies"),
-      fetch(BASE_URL + "bep3/parameters"),
-      fetch(BASE_URL + "cdp/parameters"),
-      fetch(BASE_URL + '/cdp/totalCollateral'),
-      fetch(BASE_URL + '/cdp/totalPrincipal'),
-    ]);
-  
+      totalPrincipalResponse
+    } = await makeData();
+
+
     const pricefeedPrices = await pricefeedResponse.json()
     const incentiveParamsJson = await incentiveParamsResponse.json();
     const suppliedAmountJson = await supplyAccountResponse.json();
@@ -834,7 +866,7 @@ const updateDisplayValues = async (denoms) => {
     }
     // usdx and swp market data comes from a different api so we don't want them to
     // map the same with the other markets
-    let siteData = {}
+    let siteData = {};
     // fix cssIds
     const cssIds = mapCssIds(denoms);
     const denomConversions = setConversionFactors(denoms);
@@ -854,6 +886,7 @@ const updateDisplayValues = async (denoms) => {
 
     const prices = await mapPrices(denoms, pricefeedPrices.result);
     siteData['prices'] = prices;
+    console.log(pricefeedPrices)
     siteData['prices']['busd-b'] = siteData['prices']['busd-a'];
 
     const swpPrice = await setSwpPrice(swpMarketDataJson);
@@ -861,29 +894,29 @@ const updateDisplayValues = async (denoms) => {
 
     const incentiveParamsData = await mapIncentiveParams(denoms, incentiveParamsJson.result.usdx_minting_reward_periods)
     siteData['incentiveParamsData'] = incentiveParamsData;
-
+  
     const platformAmounts = await mapPlatformAmounts(totalCollateralJson.result, totalPrincipalJson.result); 
     siteData['platformAmounts'] = platformAmounts;
 
     const cdpParamsData = await mapCdpParams(denoms, cdpParamsJson.result);
     siteData['cdpParamsData'] = cdpParamsData;
 
-    const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
+    const suppliedAmounts = mapSuppliedAmounts(denoms, await normalizeDenoms(suppliedAmountJson.result));
     siteData['suppliedAmounts'] = suppliedAmounts;
     siteData['suppliedAmounts']['busd-b'] = siteData['suppliedAmounts']['busd-a'];
 
     const totalSuppliedData = await mapDenomTotalSupplied(denoms, siteData);
     siteData['totalSuppliedData'] = totalSuppliedData;
 
-    const supplyData = mapSuppliedAmounts(denoms, supplyTotalJson.result);
+    const supplyData = mapSuppliedAmounts(denoms, await normalizeDenoms(supplyTotalJson.result.supply));
     siteData['supplyData'] = supplyData;
 
     const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
     siteData['bep3SupplyData'] = bep3SupplyData;
 
-    const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
-    siteData['bep3ParamsData'] = bep3ParamsData;
-
+    // const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
+    // siteData['bep3ParamsData'] = bep3ParamsData;
+    siteData['bep3ParamsData'] = {}; // bep3 disabled for testnet 
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
     // set display values
@@ -901,20 +934,22 @@ const updateDisplayValues = async (denoms) => {
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
     await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
-    $(".metric-blur").css("background-color", "transparent")
-    $(".metric-blur").addClass('without-after');
-    $(".api-metric").css({"display": "block", "text-align": "center"})
+    // $(".metric-blur").css("background-color", "transparent")
+    // $(".metric-blur").addClass('without-after');
+    // $(".api-metric").css({"display": "block", "text-align": "center"})
+    console.log(siteData);
 };
 
 const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp-a', 
+    'ukava-a', 'usdx', 'swp-a', 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
   main();
 };
+// CHANGED TIME 
 const sleep = (ms = 10000) => new Promise(resolve => setTimeout(resolve, ms));
 main();
