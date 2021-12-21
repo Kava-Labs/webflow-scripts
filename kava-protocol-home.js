@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://api.kava.io";
+const BASE_URL = "https://api.testnet.kava.io/";
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -106,7 +106,10 @@ const formatRewardDenom = (denom) => {
   let formattedDenom;
   switch(denom) {
     case 'ukava':
-      formattedDenom = 'ukava-a'
+      formattedDenom = 'kava-a'
+      break;
+    case 'ukava-a':
+      formattedDenom = 'kava-a'
       break;
     case 'hard':
       formattedDenom = 'hard-a'
@@ -128,7 +131,10 @@ const commonDenomMapper = (denom) => {
       formattedDenom = denom;
       break;
     case 'kava':
-      formattedDenom = 'ukava-a';
+      formattedDenom = 'kava-a';
+      break;
+    case 'ukava':
+      formattedDenom = 'kava-a';
       break;
     case 'xrp':
       formattedDenom = 'xrpb-a';
@@ -139,6 +145,53 @@ const commonDenomMapper = (denom) => {
   }
   return formattedDenom
 }
+
+// gets the human readable ibc denom and saves it in a map so we don't keep requesting it 
+const cache = new Map(); 
+const ibcDenomMapper = async (denom) => {
+  if (!denom.includes("ibc")) return;
+  if (cache.has(denom)) {
+    return cache.get(denom);  
+  };
+  const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
+  const ibcDenom = await request.json();
+  cache.set(denom, ibcDenom.denom_trace.base_denom);
+  return ibcDenom.denom_trace.base_denom; 
+}; 
+
+const normalizeDenoms = async (denomsList) => {
+  const readable = []; 
+  for (let {denom, amount} of denomsList){
+    if (denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(denom); 
+      readable.push({denom: parsedDenom, amount});
+    } else {
+      readable.push({denom, amount});
+    }
+  };
+  return readable;
+}; 
+
+const normalizeCollateralTypes = async (params, isPool = false) => {
+  const readableParams = []; 
+  for (const param of params){
+    if (param.collateral_type.includes("ibc")){
+      let readableCollateralType;
+      if (isPool){
+        readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
+      } 
+      else {
+        readableCollateralType = await ibcDenomMapper(param.collateral_type);
+      }
+    
+      readableParams.push({...param, collateral_type: readableCollateralType});
+    } else {
+      readableParams.push(param); 
+    };
+  };
+  return readableParams; 
+}; 
+
 
 const emptyCoin = (denom) => { return { denom, amount: 0 } }
 
@@ -207,7 +260,7 @@ const mapUsdxLimits = async (denoms, cdpParamsData) => {
   }
 
   for (const denom of denoms) {
-    let cdpParam = mappedLimits[denom]
+    let cdpParam = mappedLimits[denom] || mappedLimits[denom.slice(1)];
     let limit = 0;
 
     if(cdpParam) { limit = cdpParam.debtLimit }
@@ -287,7 +340,7 @@ const mapPrices = async (denoms, pricefeedResult) => {
   }
 
   for ( const denom of denoms) {
-    let mappedPrice = mappedPrices[denom]
+    let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)]
     let price = { price: 0 }
 
     if(mappedPrice) {
@@ -316,10 +369,13 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
 
 const mapCdpInterestRates = async (denoms, cdpParamsData) => {
   const coins = {};
-
   const mappedStabilityFees = {};
   if(cdpParamsData) {
     for (const denom of cdpParamsData.collateral_params) {
+      if (denom.denom.includes("ibc")){
+        const readableDenom = await ibcDenomMapper(denom.denom);
+        denom.denom = readableDenom; 
+      }
       const secondsPerYear = 31536000;
       const stabilityFeePercentage = ((Number(denom.stability_fee) ** secondsPerYear - 1) * 100).toFixed(2);
       mappedStabilityFees[denom.type] = stabilityFeePercentage
@@ -327,7 +383,7 @@ const mapCdpInterestRates = async (denoms, cdpParamsData) => {
   }
 
   for (const denom of denoms) {
-    coins[denom] = { stabilityFeePercentage: mappedStabilityFees[denom] }
+    coins[denom] = { stabilityFeePercentage: mappedStabilityFees[denom] || mappedStabilityFees[denom.slice(1)] }
   }
   return coins;
 };
@@ -518,6 +574,7 @@ const getRewardPerYearByDenom = async (siteData) => {
     }
     tokensDistributedBySuppliedAssetPerYear[commonDenomMapper(period.collateral_type)] =  coins;
   }
+  
   return tokensDistributedBySuppliedAssetPerYear;
 };
 
@@ -528,32 +585,32 @@ const updateDisplayValues = async (denoms) => {
     supplyAccountResponse,
     bep3SupplyResponse,
     cdpParamsResponse,
-    btcbCdpResponse,
-    busdCdpResponse,
-    xrpbCdpResponse,
-    bnbCdpResponse,
-    kavaCdpResponse,
-    hardCdpResponse,
-    hbtcCdpResponse,
     hardTotalSuppliedResponse,
     totalCollateralResponse,
     totalPrincipalResponse,
+    kavaCdpResponse,
+    hardCdpResponse,
+    // btcbCdpResponse,
+    // busdCdpResponse,
+    // xrpbCdpResponse,
+    // bnbCdpResponse,
+    // hbtcCdpResponse,
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
-    fetch(BASE_URL + '/auth/accounts/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
+    fetch(BASE_URL + '/bank/balances/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     fetch(BASE_URL + "/bep3/supplies"),
     fetch(BASE_URL + "/cdp/parameters"),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/btcb-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/busd-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/xrpb-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/bnb-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/ukava-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(BASE_URL + '/cdp/totalCollateral'),
     fetch(BASE_URL + '/cdp/totalPrincipal'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/kava-a'),
+    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
+    // fetch(BASE_URL + '/cdp/cdps/collateralType/btcb-a'),
+    // fetch(BASE_URL + '/cdp/cdps/collateralType/busd-a'),
+    // fetch(BASE_URL + '/cdp/cdps/collateralType/xrpb-a'),
+    // fetch(BASE_URL + '/cdp/cdps/collateralType/bnb-a'),
+    // fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
   ]);
   const pricefeedPrices = await pricefeedResponse.json()
 
@@ -561,13 +618,13 @@ const updateDisplayValues = async (denoms) => {
   const suppliedAmountJson = await supplyAccountResponse.json();
   const bep3SupplyJson = await bep3SupplyResponse.json();
   const cdpParamsJson = await cdpParamsResponse.json();
-  const btcPlatformAmountsJson = await btcbCdpResponse.json();
-  const busdPlatformAmountsJson = await busdCdpResponse.json();
-  const xrpPlatformAmountsJson = await xrpbCdpResponse.json();
-  const bnbPlatformAmountsJson = await bnbCdpResponse.json();
+  // const btcPlatformAmountsJson = await btcbCdpResponse.json();
+  // const busdPlatformAmountsJson = await busdCdpResponse.json();
+  // const xrpPlatformAmountsJson = await xrpbCdpResponse.json();
+  // const bnbPlatformAmountsJson = await bnbCdpResponse.json();
+  // const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
   const ukavaPlatformAmountsJson = await kavaCdpResponse.json();
   const hardPlatformAmountsJson = await hardCdpResponse.json();
-  const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
   const totalCollateralJson = await totalCollateralResponse.json(); 
   const totalPrincipalJson = await totalPrincipalResponse.json(); 
@@ -596,7 +653,7 @@ const updateDisplayValues = async (denoms) => {
   const usdxBorrowed = await mapUsdxBorrowed(denoms, siteData)
   siteData['usdxBorrowed'] = usdxBorrowed;
 
-  const suppliedAmounts = mapSuppliedAmounts(denoms, suppliedAmountJson.result.value.coins);
+  const suppliedAmounts = mapSuppliedAmounts(denoms, await normalizeDenoms(suppliedAmountJson.result));
   siteData['suppliedAmounts'] = suppliedAmounts;
 
   const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
@@ -608,15 +665,22 @@ const updateDisplayValues = async (denoms) => {
   const cdpInterestRate = await mapCdpInterestRates(denoms, cdpParamsJson.result);
   siteData['cdpInterestRate'] = cdpInterestRate;
 
-  const hardTotalSupplied = formatCoins(hardTotalSuppliedJson.result);
+  const hardTotalSupplied = formatCoins(await normalizeDenoms(hardTotalSuppliedJson.result));
+  
+
   siteData['hardTotalSupplied'] = hardTotalSupplied;
 
   const hardIncentiveParams = await incentiveParamsJson.result;
+  hardIncentiveParams['hard_supply_reward_periods'] = await normalizeCollateralTypes(hardIncentiveParams['hard_supply_reward_periods']);
+  hardIncentiveParams['hard_borrow_reward_periods'] = await normalizeCollateralTypes(hardIncentiveParams['hard_borrow_reward_periods'])
+  hardIncentiveParams['swap_reward_periods'] = await normalizeCollateralTypes(hardIncentiveParams['swap_reward_periods'], true);
+ 
   siteData['hardIncentiveParams'] = hardIncentiveParams;
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
   // set display values
+  console.log(siteData)
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds)
@@ -632,16 +696,17 @@ const updateDisplayValues = async (denoms) => {
   await setHardRewardApyDisplayValue(denoms, siteData, cssIds);
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
-  $(".metric-blur").css("background-color", "transparent")
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"})
+  // $(".metric-blur").css("background-color", "transparent")
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({"display": "block", "text-align": "center"})
 };
 
 const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp-a',
+    'kava-a', 'usdx', 'swp-a', 'swp-a',
+    'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
   ]
 
   await updateDisplayValues(denoms);
