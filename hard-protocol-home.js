@@ -189,19 +189,7 @@ const normalizeCollateralTypes = async (params, isPool = false) => {
   return readableParams; 
 }; 
 
-const normalizeInterestRates = async (denoms) => {
-  const readable = [];
-  for (const denom of denoms){
-    if (denom.denom.includes("ibc")){
-      const newDenom = await ibcDenomMapper(denom.denom);
-      readable.push({...denom, denom : newDenom});
-    } else {
-      readable.push(denom);
-    }
-   
-  };
-  return readable;
-}; 
+
 
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
@@ -394,7 +382,7 @@ const updateDisplayValues = async(denoms) => {
   incentiveParams['swap_reward_periods'] = await normalizeCollateralTypes(incentiveParams['swap_reward_periods'], true);
   siteData['incentiveParams'] = incentiveParams;
   
-  const interestRates = await mapHardSupplyInterestRates(await normalizeInterestRates(hardInterestRateJson.result));
+  const interestRates = await mapHardSupplyInterestRates(await normalizeDenoms(hardInterestRateJson.result));
   siteData['interestRates'] = interestRates;
 
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
