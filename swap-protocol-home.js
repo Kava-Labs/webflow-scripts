@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://api.testnet.kava.io/";
+const BASE_URL = "https://api.testnet.kava.io";
 const SWAP_POOL_URL = 'https://swap-data-testnet.kava.io/v1/pools/internal';
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',

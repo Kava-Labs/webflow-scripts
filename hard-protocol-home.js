@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://api.kava.io";
+const BASE_URL = "https://api.testnet.kava.io";
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -144,6 +144,65 @@ const commonDenomMapper = (denom) => {
   return formattedDenom;
 }
 
+const cache = new Map(); 
+const ibcDenomMapper = async (denom) => {
+  if (!denom.includes("ibc")) return;
+  if (cache.has(denom)) {
+    return cache.get(denom);  
+  };
+  const request = await fetch(BASE_URL + '/ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
+  const ibcDenom = await request.json();
+  cache.set(denom, ibcDenom.denom_trace.base_denom);
+  return ibcDenom.denom_trace.base_denom; 
+}; 
+
+const normalizeDenoms = async (denomsList) => {
+  const readable = []; 
+  for (let {denom, amount} of denomsList){
+    if (denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(denom); 
+      readable.push({denom: parsedDenom, amount});
+    } else {
+      readable.push({denom, amount});
+    }
+  };
+  return readable;
+}; 
+
+const normalizeCollateralTypes = async (params, isPool = false) => {
+  const readableParams = []; 
+  for (const param of params){
+    if (param.collateral_type.includes("ibc")){
+      let readableCollateralType;
+      if (isPool){
+        readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
+      } 
+      else {
+        readableCollateralType = await ibcDenomMapper(param.collateral_type);
+      }
+    
+      readableParams.push({...param, collateral_type: readableCollateralType});
+    } else {
+      readableParams.push(param); 
+    };
+  };
+  return readableParams; 
+}; 
+
+const normalizeInterestRates = async (denoms) => {
+  const readable = [];
+  for (const denom of denoms){
+    if (denom.denom.includes("ibc")){
+      const newDenom = await ibcDenomMapper(denom.denom);
+      readable.push({...denom, denom : newDenom});
+    } else {
+      readable.push(denom);
+    }
+   
+  };
+  return readable;
+}; 
+
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
   const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'));
@@ -161,7 +220,7 @@ const mapPrices = async (denoms, pricefeedResult) => {
   }
 
   for ( const denom of denoms) {
-    let mappedPrice = mappedPrices[denom];
+    let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)];
     let price = { price: 0 };
 
     if(mappedPrice) {
@@ -323,16 +382,19 @@ const updateDisplayValues = async(denoms) => {
   const denomConversions = setConversionFactors(denoms);
   siteData['denomConversions'] = denomConversions;
 
-  const hardTotalSupplied = formatCoins(hardTotalSuppliedJson.result);
+  const hardTotalSupplied = formatCoins(await normalizeDenoms(hardTotalSuppliedJson.result));
   siteData['hardTotalSupplied'] = hardTotalSupplied;
 
-  const hardTotalBorrowed = formatCoins(hardTotalBorrowedJson.result);
+  const hardTotalBorrowed = formatCoins(await normalizeDenoms(hardTotalBorrowedJson.result));
   siteData['hardTotalBorrowed'] = hardTotalBorrowed;
 
   const incentiveParams = await incentiveParamsJson.result;
+  incentiveParams['hard_supply_reward_periods'] = await normalizeCollateralTypes(incentiveParams['hard_supply_reward_periods']);
+  incentiveParams['hard_borrow_reward_periods'] = await normalizeCollateralTypes(incentiveParams['hard_borrow_reward_periods']);
+  incentiveParams['swap_reward_periods'] = await normalizeCollateralTypes(incentiveParams['swap_reward_periods'], true);
   siteData['incentiveParams'] = incentiveParams;
-
-  const interestRates = await mapHardSupplyInterestRates(hardInterestRateJson.result);
+  
+  const interestRates = await mapHardSupplyInterestRates(await normalizeInterestRates(hardInterestRateJson.result));
   siteData['interestRates'] = interestRates;
 
   const rawTotalHardSupplyDist = await getTotalHardAvailable(incentiveParams.hard_supply_reward_periods);
@@ -351,17 +413,18 @@ const updateDisplayValues = async(denoms) => {
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
   await setRewardApyDisplayValue(denoms, siteData, cssIds);
   await setSupplyApyDisplayValue(denoms, siteData, cssIds);
-
-  $(".metric-blur").css("background-color", "transparent")
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"})
+  console.log(siteData)
+  // $(".metric-blur").css("background-color", "transparent")
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({"display": "block", "text-align": "center"})
 }
 
 const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a'
+    'ukava-a','uakt-a', 'luna-a',
+    'uosmo-a', 'uatom-a'
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
