@@ -686,7 +686,6 @@ const updateDisplayValues = async (denoms) => {
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
   // set display values
-  console.log(siteData)
   await setTotalRewardsDistributedDisplayValue(siteData, cssIds)
 
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds)
@@ -702,9 +701,9 @@ const updateDisplayValues = async (denoms) => {
   await setHardRewardApyDisplayValue(denoms, siteData, cssIds);
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
-  // $(".metric-blur").css("background-color", "transparent")
-  // $(".metric-blur").addClass('without-after');
-  // $(".api-metric").css({"display": "block", "text-align": "center"})
+  $(".metric-blur").css("background-color", "transparent")
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"})
 };
 
 const main = async () => {

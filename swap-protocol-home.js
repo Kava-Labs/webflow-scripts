@@ -441,9 +441,9 @@ const updateDisplayValues = async(denoms, pools) => {
   await setRewardApyDisplayValue(pools, siteData, cssIds);
   await setDailyVolumesDisplayValues(siteData, cssIds);
   
-  // $(".metric-blur").css("background-color", "transparent");
-  // $(".metric-blur").addClass('without-after');
-  // $(".api-metric").css({"display": "block", "text-align": "center"});
+  $(".metric-blur").css("background-color", "transparent");
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"});
 }
 
 const main = async () => {

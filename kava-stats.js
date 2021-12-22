@@ -92,7 +92,6 @@ const ibcDenomMapper = async (denom) => {
 const normalizeDenoms = async (denomsList) => {
   const readable = [];
   for (let d of denomsList){
-    console.log(d.denom)
     if (d.denom.includes('ibc')){
       const parsedDenom = await ibcDenomMapper(d.denom); 
       readable.push({...d, denom: parsedDenom})
@@ -628,8 +627,8 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    // const element = $(`.percent-line-usdx-${denom}`)
-    // if (element) { element.css("width", percentUsdxUtilization); }
+    const element = $(`.percent-line-usdx-${denom}`)
+    if (element) { element.css("width", percentUsdxUtilization); }
   }
 }
 
@@ -778,14 +777,14 @@ const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setDisplayColor = (cssId, color) => {
-  // $(`#${cssId}`).css({ color: color });
+  $(`#${cssId}`).css({ color: color });
 }
 
 const setDisplayValueById = (cssId, value) => {
-  // const lastElement = $(`#${cssId}`).last();
-  // const firstElement = $(`#${cssId}`).first();
-  // if (lastElement) { lastElement.html(value) }
-  // if (firstElement) { firstElement.html(value) }
+  const lastElement = $(`#${cssId}`).last();
+  const firstElement = $(`#${cssId}`).first();
+  if (lastElement) { lastElement.html(value) }
+  if (firstElement) { firstElement.html(value) }
 };
 
 const updateDisplayValues = async (denoms) => {
@@ -934,10 +933,10 @@ const updateDisplayValues = async (denoms) => {
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
     await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
-    // $(".metric-blur").css("background-color", "transparent")
-    // $(".metric-blur").addClass('without-after');
-    // $(".api-metric").css({"display": "block", "text-align": "center"})
-    console.log(siteData);
+    $(".metric-blur").css("background-color", "transparent")
+    $(".metric-blur").addClass('without-after');
+    $(".api-metric").css({"display": "block", "text-align": "center"})
+
 };
 
 const main = async () => {
