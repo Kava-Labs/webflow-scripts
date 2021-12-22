@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6);
 const FACTOR_EIGHT = Number(10 ** 8);
-const BASE_URL = "https://api.testnet.kava.io";
+const BASE_URL = "https://api.testnet.kava.io/";
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -91,6 +91,10 @@ const formatCssId = (value, denom) => {
       break;
     case 'ukava-a':
       displayDenom = 'kava'
+    case 'kava-a':
+      displayDenom = 'kava'
+    case 'ukava':
+        displayDenom = 'kava'
       break;
     default:
       displayDenom = denom.split('-')[0]
@@ -160,17 +164,17 @@ const ibcDenomMapper = async (denom) => {
 }; 
 
 const normalizeDenoms = async (denomsList) => {
-  const readable = []; 
-  for (let {denom, amount} of denomsList){
-    if (denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(denom); 
-      readable.push({denom: parsedDenom, amount});
+  const readable = [];
+  for (let d of denomsList){
+    if (d.denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(d.denom); 
+      readable.push({...d, denom: parsedDenom})
     } else {
-      readable.push({denom, amount});
+        readable.push(d);
     }
-  };
+  }
   return readable;
-}; 
+};
 
 const normalizeCollateralTypes = async (params, isPool = false) => {
   const readableParams = []; 

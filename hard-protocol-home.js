@@ -157,17 +157,18 @@ const ibcDenomMapper = async (denom) => {
 }; 
 
 const normalizeDenoms = async (denomsList) => {
-  const readable = []; 
-  for (let {denom, amount} of denomsList){
-    if (denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(denom); 
-      readable.push({denom: parsedDenom, amount});
+  const readable = [];
+  for (let d of denomsList){
+    console.log(d.denom)
+    if (d.denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(d.denom); 
+      readable.push({...d, denom: parsedDenom})
     } else {
-      readable.push({denom, amount});
+        readable.push(d);
     }
-  };
+  }
   return readable;
-}; 
+};
 
 const normalizeCollateralTypes = async (params, isPool = false) => {
   const readableParams = []; 

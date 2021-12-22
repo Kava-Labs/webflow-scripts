@@ -1,6 +1,6 @@
 const FACTOR_SIX = Number(10 ** 6)
 const FACTOR_EIGHT = Number(10 ** 8)
-const BASE_URL = "https://api.testnet.kava.io";
+const BASE_URL = "https://api.testnet.kava.io/";
 const BINANACE_URL = "https://api.binance.com/api/v3/"
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
@@ -89,19 +89,19 @@ const ibcDenomMapper = async (denom) => {
   cache.set(denom, ibcDenom.denom_trace.base_denom);
   return ibcDenom.denom_trace.base_denom; 
 }; 
-
 const normalizeDenoms = async (denomsList) => {
-  const readable = []; 
-  for (let {denom, amount} of denomsList){
-    if (denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(denom); 
-      readable.push({denom: parsedDenom, amount});
+  const readable = [];
+  for (let d of denomsList){
+    console.log(d.denom)
+    if (d.denom.includes('ibc')){
+      const parsedDenom = await ibcDenomMapper(d.denom); 
+      readable.push({...d, denom: parsedDenom})
     } else {
-      readable.push({denom, amount});
+        readable.push(d);
     }
-  };
+  }
   return readable;
-}; 
+};
 
 const emptyCoin = (denom) => { return { denom, amount: 0 } }
 
@@ -886,7 +886,7 @@ const updateDisplayValues = async (denoms) => {
 
     const prices = await mapPrices(denoms, pricefeedPrices.result);
     siteData['prices'] = prices;
-    console.log(pricefeedPrices)
+
     siteData['prices']['busd-b'] = siteData['prices']['busd-a'];
 
     const swpPrice = await setSwpPrice(swpMarketDataJson);
