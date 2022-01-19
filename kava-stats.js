@@ -915,7 +915,7 @@ const updateDisplayValues = async (denoms) => {
 
     const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
     siteData['bep3ParamsData'] = bep3ParamsData;
-    siteData['bep3ParamsData'] = {}; // bep3 disabled for testnet 
+
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
     // set display values

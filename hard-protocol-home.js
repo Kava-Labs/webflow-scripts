@@ -157,36 +157,38 @@ const ibcDenomMapper = async (denom) => {
 }; 
 
 const normalizeDenoms = async (denomsList) => {
-  const readable = [];
-  for (let d of denomsList){
-    if (d.denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(d.denom); 
-      readable.push({...d, denom: parsedDenom})
-    } else {
-        readable.push(d);
-    }
-  }
-  return readable;
+  // const readable = [];
+  // for (let d of denomsList){
+  //   if (d.denom.includes('ibc')){
+  //     const parsedDenom = await ibcDenomMapper(d.denom); 
+  //     readable.push({...d, denom: parsedDenom})
+  //   } else {
+  //       readable.push(d);
+  //   }
+  // }
+  // return readable;
+  return denomsList;
 };
 
 const normalizeCollateralTypes = async (params, isPool = false) => {
-  const readableParams = []; 
-  for (const param of params){
-    if (param.collateral_type.includes("ibc")){
-      let readableCollateralType;
-      if (isPool){
-        readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
-      } 
-      else {
-        readableCollateralType = await ibcDenomMapper(param.collateral_type);
-      }
+  // const readableParams = []; 
+  // for (const param of params){
+  //   if (param.collateral_type.includes("ibc")){
+  //     let readableCollateralType;
+  //     if (isPool){
+  //       readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
+  //     } 
+  //     else {
+  //       readableCollateralType = await ibcDenomMapper(param.collateral_type);
+  //     }
     
-      readableParams.push({...param, collateral_type: readableCollateralType});
-    } else {
-      readableParams.push(param); 
-    };
-  };
-  return readableParams; 
+  //     readableParams.push({...param, collateral_type: readableCollateralType});
+  //   } else {
+  //     readableParams.push(param); 
+  //   };
+  // };
+  // return readableParams; 
+  return params;
 }; 
 
 
@@ -393,7 +395,7 @@ const updateDisplayValues = async(denoms) => {
 
   const hardSupplyRewardsPerYearByDenom = await getRewardPerYearByDenom(siteData);
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
-
+ 
   // set display values in ui
   await setTotalAssetValueDisplayValue(siteData, cssIds);
   await setTotalHardDistributedDisplayValue(siteData, cssIds);
