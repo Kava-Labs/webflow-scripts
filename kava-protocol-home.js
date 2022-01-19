@@ -135,10 +135,10 @@ const commonDenomMapper = (denom) => {
       formattedDenom = denom;
       break;
     case 'kava':
-      formattedDenom = 'kava-a';
+      formattedDenom = 'ukava-a';
       break;
     case 'ukava':
-      formattedDenom = 'kava-a';
+      formattedDenom = 'ukava-a';
       break;
     case 'xrp':
       formattedDenom = 'xrpb-a';
@@ -475,6 +475,7 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
    
     const denomPrice = siteData['prices'][denom].price;
     const cssId = cssIds[denom]['apy'];
+    console.log(denom, siteData["platformAmounts"])
     const lockedAmount = siteData['platformAmounts'][denom]?.collateral || siteData['platformAmounts'][denom.slice(1)].collateral;
     const usdxMintingRewards = siteData['incentiveParamsData'][denom]
 
@@ -691,8 +692,8 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'kava-a', 'usdx', 'swp-a',
-    'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
+    'ukava-a', 'usdx', 'swp-a',
+    // 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a' // uncomment after governance proposal
   ]
 
   await updateDisplayValues(denoms);
