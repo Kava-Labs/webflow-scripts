@@ -594,13 +594,6 @@ const updateDisplayValues = async (denoms) => {
     hardTotalSuppliedResponse,
     totalCollateralResponse,
     totalPrincipalResponse,
-    kavaCdpResponse,
-    hardCdpResponse,
-    // btcbCdpResponse,
-    // busdCdpResponse,
-    // xrpbCdpResponse,
-    // bnbCdpResponse,
-    // hbtcCdpResponse,
   ] = await Promise.all([
     fetch(BASE_URL + '/pricefeed/prices'),
     fetch(BASE_URL + "/incentive/parameters"),
@@ -610,13 +603,7 @@ const updateDisplayValues = async (denoms) => {
     fetch(`${BASE_URL}/hard/total-deposited`),
     fetch(BASE_URL + '/cdp/totalCollateral'),
     fetch(BASE_URL + '/cdp/totalPrincipal'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/kava-a'),
-    fetch(BASE_URL + '/cdp/cdps/collateralType/hard-a'),
-    // fetch(BASE_URL + '/cdp/cdps/collateralType/btcb-a'),
-    // fetch(BASE_URL + '/cdp/cdps/collateralType/busd-a'),
-    // fetch(BASE_URL + '/cdp/cdps/collateralType/xrpb-a'),
-    // fetch(BASE_URL + '/cdp/cdps/collateralType/bnb-a'),
-    // fetch(BASE_URL + '/cdp/cdps/collateralType/hbtc-a'),
+
   ]);
   const pricefeedPrices = await pricefeedResponse.json()
 
@@ -624,13 +611,7 @@ const updateDisplayValues = async (denoms) => {
   const suppliedAmountJson = await supplyAccountResponse.json();
   const bep3SupplyJson = await bep3SupplyResponse.json();
   const cdpParamsJson = await cdpParamsResponse.json();
-  // const btcPlatformAmountsJson = await btcbCdpResponse.json();
-  // const busdPlatformAmountsJson = await busdCdpResponse.json();
-  // const xrpPlatformAmountsJson = await xrpbCdpResponse.json();
-  // const bnbPlatformAmountsJson = await bnbCdpResponse.json();
-  // const hbtcPlatformAmountsJson = await hbtcCdpResponse.json();
-  const ukavaPlatformAmountsJson = await kavaCdpResponse.json();
-  const hardPlatformAmountsJson = await hardCdpResponse.json();
+
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
   const totalCollateralJson = await totalCollateralResponse.json(); 
   const totalPrincipalJson = await totalPrincipalResponse.json(); 
