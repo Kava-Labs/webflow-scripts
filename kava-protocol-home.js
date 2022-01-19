@@ -475,7 +475,6 @@ const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
    
     const denomPrice = siteData['prices'][denom].price;
     const cssId = cssIds[denom]['apy'];
-    console.log(denom, siteData["platformAmounts"])
     const lockedAmount = siteData['platformAmounts'][denom]?.collateral || siteData['platformAmounts'][denom.slice(1)].collateral;
     const usdxMintingRewards = siteData['incentiveParamsData'][denom]
 

@@ -450,15 +450,17 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a', 'swp-a', 'uakt-a',
-    'luna-a', 'uosmo-a', 'uatom-a'
+    'ukava-a', 'swp-a', 
+    // 'uakt-a',
+    // 'luna-a', 'uosmo-a', 'uatom-a'
   ];
 
   const pools = [
     'bnb-usdx', 'btcb-usdx', 'busd-usdx',
-    'usdx-xrpb', 'hard-usdx', 'uakt-usdx',
-    'ukava-usdx', 'swp-usdx', 'luna-usdx',
-    'uosmo-usdx', 'uatom-usdx',
+    'usdx-xrpb', 'hard-usdx', 
+    'ukava-usdx', 'swp-usdx', 
+    // 'luna-usdx','uakt-usdx',
+    // 'uosmo-usdx', 'uatom-usdx',
   ];
 
   await updateDisplayValues(denoms, pools);

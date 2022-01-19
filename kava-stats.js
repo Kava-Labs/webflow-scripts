@@ -913,8 +913,8 @@ const updateDisplayValues = async (denoms) => {
     const bep3SupplyData = await mapBep3Supplies(denoms, bep3SupplyJson.result);
     siteData['bep3SupplyData'] = bep3SupplyData;
 
-    // const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
-    // siteData['bep3ParamsData'] = bep3ParamsData;
+    const bep3ParamsData = await mapBep3Params(denoms, bep3ParamsJson.result.asset_params, siteData);
+    siteData['bep3ParamsData'] = bep3ParamsData;
     siteData['bep3ParamsData'] = {}; // bep3 disabled for testnet 
     const defiCoinsSupply = await mapSupplyAndMarket(denoms, siteData)
     siteData['defiCoinsSupply'] = defiCoinsSupply;
@@ -943,12 +943,13 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
-    'ukava-a', 'usdx', 'swp-a', 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
+    'ukava-a', 'usdx', 'swp-a', 
+    // 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
   main();
 };
-// CHANGED TIME 
+
 const sleep = (ms = 10000) => new Promise(resolve => setTimeout(resolve, ms));
 main();

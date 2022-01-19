@@ -411,8 +411,9 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a','uakt-a', 'luna-a',
-    'uosmo-a', 'uatom-a'
+    'ukava-a',
+    // 'uakt-a', 'luna-a',
+    // 'uosmo-a', 'uatom-a'
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
