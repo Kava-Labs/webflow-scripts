@@ -12,6 +12,10 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
 // TODO add other denoms here as they become available 
 const ibcDenoms = {
   "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "uatom-a",
+  // TODO 
+  // "ibc/.": "uakt-a", 
+  // "ibc/..": "luna-a",
+  // "ibc/...":"uosmo-a",
 };
 
 const setConversionFactors = (denoms) => {
@@ -983,7 +987,7 @@ const main = async () => {
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a', 
     'uatom-a',
-    // 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
+    // 'uakt-a', 'luna-a', 'uosmo-a',
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
