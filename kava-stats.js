@@ -825,6 +825,7 @@ const updateDisplayValues = async (denoms) => {
     xrpbMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     usdxMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/usdx'),
     atomMarketResponse: () => fetch("https://api.coingecko.com/api/v3/coins/cosmos"),
+    // lunaMarketResponse: () => fetch("https://api.coingecko.com/api/v3/coins/terra-luna"),
     swpMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     supplyAccountResponse: () => fetch(BASE_URL + 'bank/balances/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     supplyTotalResponse: () => fetch(BASE_URL + "bank/total"),
@@ -860,6 +861,7 @@ const updateDisplayValues = async (denoms) => {
       totalCollateralResponse,
       totalPrincipalResponse,
       atomMarketResponse,
+      // lunaMarketResponse,
     } = await makeData();
 
 
@@ -881,6 +883,7 @@ const updateDisplayValues = async (denoms) => {
     const totalCollateralJson = await totalCollateralResponse.json(); 
     const totalPrincipalJson = await totalPrincipalResponse.json(); 
     const atomMarketDataJson = await atomMarketResponse.json();
+    // const lunaMaretDataJson = await lunaMarketResponse.json();
     const markets = {
       'bnb-a': bnbMarketData,
       'btcb-a': btcbMarketData,
@@ -913,7 +916,10 @@ const updateDisplayValues = async (denoms) => {
 
     const atomMarketData = await mapCoinGeckoApiData(atomMarketDataJson);
     siteData['marketData']["uatom-a"]["priceChangePercent"] = String(atomMarketData);
-   
+
+    // const lunaMarketData = await mapCoinGeckoApiData(lunaMaretDataJson);
+    // siteData["marketData"]["uluna-a"]["priceChangePercent"] = String(lunaMarketData);
+
     const prices = await mapPrices(denoms, pricefeedPrices.result);
     siteData['prices'] = prices;
 
