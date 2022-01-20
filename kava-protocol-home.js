@@ -153,14 +153,15 @@ const commonDenomMapper = (denom) => {
 // gets the human readable ibc denom and saves it in a map so we don't keep requesting it 
 const cache = new Map(); 
 const ibcDenomMapper = async (denom) => {
-  if (!denom.includes("ibc")) return;
-  if (cache.has(denom)) {
-    return cache.get(denom);  
-  };
-  const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
-  const ibcDenom = await request.json();
-  cache.set(denom, ibcDenom.denom_trace.base_denom);
-  return ibcDenom.denom_trace.base_denom; 
+  // if (!denom.includes("ibc")) return;
+  // if (cache.has(denom)) {
+  //   return cache.get(denom);  
+  // };
+  // const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
+  // const ibcDenom = await request.json();
+  // cache.set(denom, ibcDenom.denom_trace.base_denom);
+  // return ibcDenom.denom_trace.base_denom; 
+  return denom;
 }; 
 
 const normalizeDenoms = async (denomsList) => {
@@ -682,6 +683,7 @@ const updateDisplayValues = async (denoms) => {
   await setHardRewardApyDisplayValue(denoms, siteData, cssIds);
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
+
   $(".metric-blur").css("background-color", "transparent")
   $(".metric-blur").addClass('without-after');
   $(".api-metric").css({"display": "block", "text-align": "center"})
