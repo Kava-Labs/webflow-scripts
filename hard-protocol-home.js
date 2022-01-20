@@ -251,14 +251,18 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
  
   let totalAssetValue = 0;
   for (const coin in suppliedBalances) {
-    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin]? denomConversions[coin] : denomConversions[ibcDenoms[coin]];
-    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin]? denomConversions[coin] : denomConversions[ibcDenoms[coin]];
-    
+    // ibc denoms need to be parsed this takes care of that if denomConversions object doesn't have the ibc/...... denom 
+    const denomConvFactor = denomConversions[coin] ? denomConversions[coin] : denomConversions[ibcDenoms[coin]];
+   
+    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount) / denomConvFactor;
+    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount) / denomConvFactor;
+
     const price = prices[coin]?.price || prices[ibcDenoms[coin]].price;
    
     totalAssetValue += (suppliedCurrencyAmount + borrowedCurrencyAmount) * price;
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
+
   setDisplayValueById(cssId, totalAssetValueUsd);
 }
 
