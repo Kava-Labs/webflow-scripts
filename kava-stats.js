@@ -11,7 +11,7 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
 
 // TODO add other denoms here as they become available 
 const ibcDenoms = {
-  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "uatom-a",
+  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "atom-a",
   // TODO 
   // "ibc/.": "uakt-a", 
   // "ibc/..": "luna-a",
@@ -145,6 +145,12 @@ const formatMoneyMillions = (v) => {
   const valueBorrowedFormatted = usdFormatter.format(valueBorrowedInMil)
   return valueBorrowedFormatted + "M"
 }
+const formatInThousands = (value) => {
+  const valueInK = value / Number(10 ** 3);
+  const valueInKUsd = usdFormatter.format(valueInK);
+  return valueInKUsd + "K";
+}
+
 
 const formatMoneyNoDecimalsOrLabels = (v) => {
   const fm = usdFormatter.format(v)
@@ -294,6 +300,7 @@ const mapCssIds = (denoms) => {
     }
     ids[denom].borrowApy = formatCssId('borrow-apy', denom)
   }
+  
   return ids;
 }
 
@@ -759,6 +766,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   const prices = siteData['prices']
   const cssId = cssIds['totalMarketCap']
   let total = 0;
+ 
   for (const denom of denoms) {
    let price = 0;
    let suppliedCoin = 0;
@@ -780,9 +788,9 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
     total += suppliedDenomUsd
     const desktopCssId = cssIds[denom]['marketCap']['d']
     const mobileCssId = cssIds[denom]['marketCap']['m']
-
-    setDisplayValueById(desktopCssId, formatMoneyMillions(suppliedDenomUsd))
-    setDisplayValueById(mobileCssId, formatMoneyMillions(suppliedDenomUsd))
+    
+    setDisplayValueById(desktopCssId, suppliedDenomUsd > 1000000 ? formatMoneyMillions(suppliedDenomUsd) : formatInThousands(suppliedDenomUsd))
+    setDisplayValueById(mobileCssId, suppliedDenomUsd > 1000000 ? formatMoneyMillions(suppliedDenomUsd) : formatInThousands(suppliedDenomUsd))
   }
 
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
@@ -813,8 +821,8 @@ const setDisplayColor = (cssId, color) => {
 const setDisplayValueById = (cssId, value) => {
   const lastElement = $(`#${cssId}`).last();
   const firstElement = $(`#${cssId}`).first();
-  if (lastElement) { lastElement.html(value) }
-  if (firstElement) { firstElement.html(value) }
+  if (lastElement) { lastElement.html(value) };
+  if (firstElement) { firstElement.html(value) };
 };
 
 const updateDisplayValues = async (denoms) => {
@@ -986,7 +994,7 @@ const main = async () => {
     'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a', 
-    'uatom-a',
+    'atom-a',
     // 'uakt-a', 'luna-a', 'uosmo-a',
   ];
   await updateDisplayValues(denoms);
