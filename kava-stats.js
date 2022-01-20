@@ -8,6 +8,12 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD'
 })
 
+
+// TODO add other denoms here as they become available 
+const ibcDenoms = {
+  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "uatom-a",
+};
+
 const setConversionFactors = (denoms) => {
   const denomConversions = {}
   for (const denom of denoms) {
@@ -57,49 +63,40 @@ const setRewardsDates = (denoms) => {
 }
 
 const commonDenomMapper = (denom) => {
-  let formattedDenom;
-  switch(denom.toLowerCase()) {
-    case 'btc':
-      formattedDenom = 'btcb-a';
-      break;
-    case 'usdx':
-      formattedDenom = denom;
-      break;
-    case 'kava':
-      formattedDenom = 'ukava-a';
-      break;
-    case 'xrp':
-      formattedDenom = 'xrpb-a';
-      break;
-    default:
-      formattedDenom = denom + '-a';
-      break;
-  }
-  return formattedDenom
-}
-// gets the human readable ibc denom and saves it in a map so we don't keep requesting it 
-const cache = new Map(); 
-const ibcDenomMapper = async (denom) => {
-  if (!denom.includes("ibc")) return;
-  if (cache.has(denom)) {
-    return cache.get(denom);  
+  const commonDenoms = {
+    "btc": "btcb-a",
+    "uatom-a": "uatom-a",
+    "usdx": "usdx",
+    "kava": "ukava-a",
+    "xrp": "xrpb-a",
   };
-  const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
-  const ibcDenom = await request.json();
-  cache.set(denom, ibcDenom.denom_trace.base_denom);
-  return ibcDenom.denom_trace.base_denom; 
-}; 
-const normalizeDenoms = async (denomsList) => {
-  const readable = [];
-  for (let d of denomsList){
-    if (d.denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(d.denom); 
-      readable.push({...d, denom: parsedDenom})
+  const commonDenom = commonDenoms[denom];
+  if (commonDenom) {
+    return commonDenom;
+  }
+  return denom + '-a';
+}
+const ibcDenomMapper = (denom) => {
+  if (!denom.includes("ibc")) {
+    return denom;
+  };
+
+  if (ibcDenoms.hasOwnProperty(denom)) {
+    return ibcDenoms[denom];
+  };
+};
+
+const normalizeDenoms = (denomsList) => {
+  const readableDenoms = [];
+  for (let d of denomsList) {
+    if (d.denom.includes('ibc')) {
+      const parsedDenom = ibcDenomMapper(d.denom);
+      readableDenoms.push({ ...d, denom: parsedDenom })
     } else {
-        readable.push(d);
+      readableDenoms.push(d);
     }
   }
-  return readable;
+  return readableDenoms;
 };
 
 const emptyCoin = (denom) => { return { denom, amount: 0 } }
@@ -298,27 +295,28 @@ const mapCssIds = (denoms) => {
 
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
-  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'))
+  const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'));
   let prices = {};
 
   let mappedPrices = {};
   for (const price of nonThirtyPrices) {
-    const priceName = price.market_id.split(":")[0]
-    mappedPrices[commonDenomMapper(priceName)] = { price: Number(price.price)}
-    
+    const priceName = price.market_id.split(":")[0];
+    mappedPrices[commonDenomMapper(priceName)] = { price: Number(price.price) };
+
     // hbtc doesn't have it's own price, it just uses btc's price
     if (commonDenomMapper(priceName) === 'btcb-a') {
-      mappedPrices['hbtc-a'] = { price: Number(price.price)}
+      mappedPrices['hbtc-a'] = { price: Number(price.price) };
     }
   }
-  for ( const denom of denoms) {
-    // || helps when there is a u in front of the ibc denom it will strip the u and look for it 
+
+  for (const denom of denoms) {
     let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)];
     let price = { price: 0 };
-    if(mappedPrice) {
-      price = { price: mappedPrice.price }
+
+    if (mappedPrice) {
+      price = { price: mappedPrice.price };
     }
-    prices[denom] = price
+    prices[denom] = price;
   }
   return prices;
 };
@@ -627,8 +625,8 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    const element = $(`.percent-line-usdx-${denom}`)
-    if (element) { element.css("width", percentUsdxUtilization); }
+    // const element = $(`.percent-line-usdx-${denom}`)
+    // if (element) { element.css("width", percentUsdxUtilization); }
   }
 }
 
@@ -689,15 +687,19 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     let price = 0; 
     if(prices[denom]) {
       price = prices[denom].price; 
-    };
-    let denomSupplied = 0;
-    if (platformAmounts[denom]) {
-      denomSupplied = platformAmounts[denom].collateral;
-    };
-    let factor = FACTOR_EIGHT;
+    } else {
+      console.warn(`coudn't find ${denom} in prices object, will resolve to zero price`);
+    }
+    const denomSupplied = platformAmounts[denom].collateral;
+    // factor eight as a default is good because ibc & binance tokens need that, kava tokens are guarantee to be 
+    // in the denom conversion object 
+    let factor = FACTOR_EIGHT; 
     if (denomConversions[denom]){
        factor = denomConversions[denom];
+    } else {
+      console.warn(`coudn't find ${denom} in denomConversions object, will resolve to factor 8`);
     };
+
     const denomSuppliedUSD = (denomSupplied * price) / factor;
     totalAssetsSupplied += denomSuppliedUSD;
   };
@@ -777,14 +779,14 @@ const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setDisplayColor = (cssId, color) => {
-  $(`#${cssId}`).css({ color: color });
+  // $(`#${cssId}`).css({ color: color });
 }
 
 const setDisplayValueById = (cssId, value) => {
-  const lastElement = $(`#${cssId}`).last();
-  const firstElement = $(`#${cssId}`).first();
-  if (lastElement) { lastElement.html(value) }
-  if (firstElement) { firstElement.html(value) }
+  // const lastElement = $(`#${cssId}`).last();
+  // const firstElement = $(`#${cssId}`).first();
+  // if (lastElement) { lastElement.html(value) }
+  // if (firstElement) { firstElement.html(value) }
 };
 
 const updateDisplayValues = async (denoms) => {
@@ -933,9 +935,10 @@ const updateDisplayValues = async (denoms) => {
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
     await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
-    $(".metric-blur").css("background-color", "transparent")
-    $(".metric-blur").addClass('without-after');
-    $(".api-metric").css({"display": "block", "text-align": "center"})
+    console.log(siteData);
+    // $(".metric-blur").css("background-color", "transparent")
+    // $(".metric-blur").addClass('without-after');
+    // $(".api-metric").css({"display": "block", "text-align": "center"})
 
 };
 
@@ -944,6 +947,7 @@ const main = async () => {
     'bnb-a', 'btcb-a', 'busd-a', 
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a', 
+    'uatom-a',
     // 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a'
   ];
   await updateDisplayValues(denoms);
