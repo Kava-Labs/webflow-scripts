@@ -193,7 +193,7 @@ const normalizeCollateralTypes = async (params, isPool = false) => {
 
 
 const ibcDenoms = {
-  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2-a": "uatom-a"
+  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2-a": "uatom-a",
 }
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
@@ -248,11 +248,11 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
   const borrowedBalances = siteData['hardTotalBorrowed'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
-
+ 
   let totalAssetValue = 0;
   for (const coin in suppliedBalances) {
-    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin];
-    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin];
+    const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin]? denomConversions[coin] : denomConversions[ibcDenoms[coin]];
+    const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin]? denomConversions[coin] : denomConversions[ibcDenoms[coin]];
     
     const price = prices[coin]?.price || prices[ibcDenoms[coin]].price;
    
@@ -406,10 +406,10 @@ const updateDisplayValues = async(denoms) => {
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
   await setRewardApyDisplayValue(denoms, siteData, cssIds);
   await setSupplyApyDisplayValue(denoms, siteData, cssIds);
-
-  $(".metric-blur").css("background-color", "transparent")
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"})
+  console.log(siteData)
+  // $(".metric-blur").css("background-color", "transparent")
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({"display": "block", "text-align": "center"})
 }
 
 const main = async () => {
