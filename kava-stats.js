@@ -176,6 +176,8 @@ const denomLabel = (v) => {
       return 'KAVA'
     case 'btcb-a':
       return 'BTC'
+    case 'uatom-a':
+      return "ATOM"
     default:
       return v.split('-')[0].toUpperCase()
   }
