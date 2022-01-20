@@ -58,6 +58,8 @@ const formatCssId = (value, denom) => {
     case 'ukava-a':
       displayDenom = 'kava'
       break;
+    case 'uatom-a':
+      displayDenom = 'atom';
     default:
       displayDenom = denom.split('-')[0]
       break;
