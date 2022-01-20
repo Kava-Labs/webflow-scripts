@@ -722,7 +722,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
-  console.log("total supplied",totalAssetsSuppliedUsd);
+
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
@@ -746,7 +746,7 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
     totalAssetsBorrowed += denomBorrowedUSD;
   };
   const totalAssetsBorrowedUsd = usdFormatter.format(totalAssetsBorrowed);
-  console.log("total borrowed",totalAssetsBorrowedUsd)
+
   setDisplayValueById(cssId, noDollarSign(totalAssetsBorrowedUsd));
 };
 
@@ -780,7 +780,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
     setDisplayValueById(desktopCssId, formatMoneyMillions(suppliedDenomUsd))
     setDisplayValueById(mobileCssId, formatMoneyMillions(suppliedDenomUsd))
   }
-  console.log("market cap",noDollarSign(usdFormatter.format(total)))
+
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
 }
 
@@ -970,7 +970,7 @@ const updateDisplayValues = async (denoms) => {
     await setMarketCapDisplayValues(denoms, siteData, cssIds)
     await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
-    console.log(siteData);
+ 
     $(".metric-blur").css("background-color", "transparent")
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"})
