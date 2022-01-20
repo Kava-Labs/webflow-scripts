@@ -192,7 +192,9 @@ const normalizeCollateralTypes = async (params, isPool = false) => {
 }; 
 
 
-
+const ibcDenoms = {
+  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2-a": "uatom-a"
+}
 const mapPrices = async (denoms, pricefeedResult) => {
   // for now drop any of the usd:30 prices returned
   const nonThirtyPrices = pricefeedResult.filter(p => !p.market_id.includes('30'));
@@ -251,8 +253,9 @@ const setTotalAssetValueDisplayValue = async (siteData, cssIds) => {
   for (const coin in suppliedBalances) {
     const suppliedCurrencyAmount = Number(suppliedBalances[coin].amount)/ denomConversions[coin];
     const borrowedCurrencyAmount = Number(borrowedBalances[coin].amount)/ denomConversions[coin];
-
-    const price = prices[coin].price;
+    
+    const price = prices[coin]?.price || prices[ibcDenoms[coin]].price;
+   
     totalAssetValue += (suppliedCurrencyAmount + borrowedCurrencyAmount) * price;
   }
   const totalAssetValueUsd = usdFormatter.format(totalAssetValue);
@@ -413,7 +416,7 @@ const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a',
+    'ukava-a',  'uatom-a'
     // 'uakt-a', 'luna-a',
     // 'uosmo-a', 'uatom-a'
   ];
