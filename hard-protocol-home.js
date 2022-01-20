@@ -318,7 +318,7 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
     const currencyValue = suppliedHardAmount / denomConversions[denom];
 
     const usdValue = currencyValue * prices[denom].price;
-    const denomTotalSupplied = displayInMillions(usdValue);
+    const denomTotalSupplied = usdValue > 1000000 ? displayInMillions(usdValue) : displayInThousands(usdValue);
     setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
