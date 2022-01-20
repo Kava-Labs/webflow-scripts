@@ -641,8 +641,8 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    // const element = $(`.percent-line-usdx-${denom}`)
-    // if (element) { element.css("width", percentUsdxUtilization); }
+    const element = $(`.percent-line-usdx-${denom}`)
+    if (element) { element.css("width", percentUsdxUtilization); }
   }
 }
 
@@ -784,27 +784,16 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
   setDisplayValueById(cssId, noDollarSign(usdFormatter.format(total)))
 }
 
-// const setDenomTotalSupplyValue = async (supplyDataOld, denomPrice, platformDenom) => {
-//   let denomTotalSupply;
-//   platformDenom === 'bnb' ?
-//     denomTotalSupply = bnbAmountOnPlatform(supplyDataOld) :
-//     denomTotalSupply = totalAmountOnPlatformByDenom(supplyDataOld, platformDenom)
-//   let denomTotalSupplyConverted
-//   isKavaNativeAsset(platformDenom) ?
-//     denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_SIX :
-//     denomTotalSupplyConverted = Number(denomTotalSupply)/FACTOR_EIGHT
-//   let denomTotalSupplyValue =  Number(denomTotalSupplyConverted * denomPrice)
-//   let data = {}
-//   data[`${platformDenom}Usd`] = denomTotalSupplyValue
-//   data[`${platformDenom}MarketCap`] = formatMoneyMillions(denomTotalSupplyValue)
-//   data[`${platformDenom}Supply`] = formatMoneyNoDecimalsOrLabels(denomTotalSupplyConverted) + ' ' + denomLabel(platformDenom)
-//   return data;
-// };
-
 const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
   const defiCoinsSupply = siteData['defiCoinsSupply']
   for (const denom of denoms) {
-    const supply = defiCoinsSupply[denom]
+    let supply = 0; 
+    if (defiCoinsSupply[denom] !== undefined){
+      supply = defiCoinsSupply[denom]
+    } else {
+      console.warn(`${denom} not found in defiCoinsSupply Object, falling back to 0`);
+    }
+    
     const formattedSupply = formatMoneyNoDecimalsOrLabels(supply) + ' ' + denomLabel(denom)
     const desktopCssId = cssIds[denom]['supplied']['d']
     const mobileCssId = cssIds[denom]['supplied']['m']
@@ -814,14 +803,14 @@ const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setDisplayColor = (cssId, color) => {
-  // $(`#${cssId}`).css({ color: color });
+  $(`#${cssId}`).css({ color: color });
 }
 
 const setDisplayValueById = (cssId, value) => {
-  // const lastElement = $(`#${cssId}`).last();
-  // const firstElement = $(`#${cssId}`).first();
-  // if (lastElement) { lastElement.html(value) }
-  // if (firstElement) { firstElement.html(value) }
+  const lastElement = $(`#${cssId}`).last();
+  const firstElement = $(`#${cssId}`).first();
+  if (lastElement) { lastElement.html(value) }
+  if (firstElement) { firstElement.html(value) }
 };
 
 const updateDisplayValues = async (denoms) => {
@@ -976,9 +965,9 @@ const updateDisplayValues = async (denoms) => {
     await setSupplyDisplayValues(denoms, siteData, cssIds);
     await setBorrowApyDisplayValues(denoms, siteData, cssIds);
     console.log(siteData);
-    // $(".metric-blur").css("background-color", "transparent")
-    // $(".metric-blur").addClass('without-after');
-    // $(".api-metric").css({"display": "block", "text-align": "center"})
+    $(".metric-blur").css("background-color", "transparent")
+    $(".metric-blur").addClass('without-after');
+    $(".api-metric").css({"display": "block", "text-align": "center"})
 
 };
 
