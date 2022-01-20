@@ -406,10 +406,10 @@ const updateDisplayValues = async(denoms) => {
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
   await setRewardApyDisplayValue(denoms, siteData, cssIds);
   await setSupplyApyDisplayValue(denoms, siteData, cssIds);
-  console.log(siteData)
-  // $(".metric-blur").css("background-color", "transparent")
-  // $(".metric-blur").addClass('without-after');
-  // $(".api-metric").css({"display": "block", "text-align": "center"})
+
+  $(".metric-blur").css("background-color", "transparent")
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"})
 }
 
 const main = async () => {
