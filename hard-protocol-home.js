@@ -59,7 +59,8 @@ const formatCssId = (value, denom) => {
       displayDenom = 'kava'
       break;
     case 'uatom-a':
-      displayDenom = 'atom';
+      displayDenom = 'ATOM';
+      break;
     default:
       displayDenom = denom.split('-')[0]
       break;
@@ -241,6 +242,7 @@ const mapCssIds = (denoms) => {
     ids[denom].rewardApy = formatCssId('rapy', denom);
     ids[denom].supplyApy = formatCssId('sapy', denom);
   }
+  
   return ids;
 }
 
