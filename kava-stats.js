@@ -19,12 +19,15 @@ const ibcDenoms = {
 };
 
 const setConversionFactors = (denoms) => {
-  const denomConversions = {}
+  const denomConversions = {};
   for (const denom of denoms) {
     if (isKavaNativeAsset(denom)) {
-      denomConversions[denom] = FACTOR_SIX
-    } else {
-      denomConversions[denom] = FACTOR_EIGHT
+      denomConversions[denom] = FACTOR_SIX;
+    } else if (denom === "uatom-a"){
+      denomConversions[denom] = FACTOR_SIX;
+    } 
+    else {
+      denomConversions[denom] = FACTOR_EIGHT;
     }
   }
   return denomConversions;
@@ -982,9 +985,9 @@ const updateDisplayValues = async (denoms) => {
   await setAssetLimitUsdxDisplayValue(denoms, siteData, cssIds)
   await setDenomTotalSuppliedDisplayValues(denoms, siteData, cssIds)
   // denoms not needed here since totalSupplieData has already looped through the denoms
-  await setTotalAssetsSuppliedDisplayValue(siteData, cssIds)
-  await setTotalAssetsBorrowedDisplayValue(siteData, cssIds)
-  await setMarketCapDisplayValues(denoms, siteData, cssIds)
+  await setTotalAssetsSuppliedDisplayValue(siteData, cssIds);
+  await setTotalAssetsBorrowedDisplayValue(siteData, cssIds);
+  await setMarketCapDisplayValues(denoms, siteData, cssIds);
   await setSupplyDisplayValues(denoms, siteData, cssIds);
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 

@@ -26,7 +26,10 @@ const setConversionFactors = (denoms) => {
   for (const denom of denoms) {
     if (isKavaNativeAsset(denom)) {
       denomConversions[denom] = FACTOR_SIX;
-    } else {
+    } else if (denom === "uatom-a"){
+      denomConversions[denom] = FACTOR_SIX;
+    } 
+    else {
       denomConversions[denom] = FACTOR_EIGHT;
     }
   }
@@ -311,6 +314,7 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
   const hardTotalSupplied = siteData['hardTotalSupplied'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
+  console.log(hardTotalSupplied)
   for (const denom of denoms) {
     const suppliedHard = hardTotalSupplied[denom];
     const suppliedHardAmount = suppliedHard ? Number(suppliedHard.amount) : 0;
@@ -443,7 +447,7 @@ const updateDisplayValues = async (denoms) => {
   await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
   await setRewardApyDisplayValue(denoms, siteData, cssIds);
   await setSupplyApyDisplayValue(denoms, siteData, cssIds);
-
+  console.log(siteData)
   $(".metric-blur").css("background-color", "transparent");
   $(".metric-blur").addClass('without-after');
   $(".api-metric").css({ "display": "block", "text-align": "center" });
