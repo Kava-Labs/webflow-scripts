@@ -1,6 +1,14 @@
-const FACTOR_SIX = Number(10 ** 6);
-const FACTOR_EIGHT = Number(10 ** 8);
+const FACTOR_6 = Number(10 ** 6);
+const FACTOR_8 = Number(10 ** 8);
 const BASE_URL = "https://api2.kava.io";
+
+const ibcDenoms = {
+  "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2": "uatom-a",
+  // TODO 
+  // "ibc/.": "uakt-a", 
+  // "ibc/..": "luna-a",
+  // "ibc/...":"uosmo-a",
+};
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -11,9 +19,12 @@ const setConversionFactors = (denoms) => {
   const denomConversions = {}
   for (const denom of denoms) {
     if (isKavaNativeAsset(denom)) {
-      denomConversions[denom] = FACTOR_SIX
-    } else {
-      denomConversions[denom] = FACTOR_EIGHT
+      denomConversions[denom] = FACTOR_6
+    } else if (denom === "uatom-a"){
+      denomConversions[denom] = FACTOR_6
+    } 
+    else {
+      denomConversions[denom] = FACTOR_8
     }
   }
   return denomConversions;
@@ -68,7 +79,7 @@ const formatPercentage = (value) => {
 };
 
 const displayInMillions = (value) => {
-  const valueInMil = value/FACTOR_SIX;
+  const valueInMil = value/FACTOR_6;
   const valueInMilUsd = usdFormatter.format(valueInMil);
   return valueInMilUsd + "M";
 }
@@ -85,16 +96,24 @@ const isKavaNativeAsset = (denom) => {
 
 const formatCssId = (value, denom) => {
   let displayDenom;
-  switch(denom) {
+  switch (denom) {
     case 'xrpb-a':
       displayDenom = denom.split('b-')[0]
       break;
     case 'ukava-a':
       displayDenom = 'kava'
-    case 'kava-a':
-      displayDenom = 'kava'
-    case 'ukava':
-        displayDenom = 'kava'
+      break;
+    case 'uatom-a':
+      displayDenom = 'atom';
+      break;
+    case 'luna-a':
+      displayDenom = 'luna';
+      break;
+    case 'akt-a':
+      displayDenom = 'akt';
+      break;
+    case 'osmo-a':
+      displayDenom = 'osmo'
       break;
     default:
       displayDenom = denom.split('-')[0]
@@ -103,7 +122,6 @@ const formatCssId = (value, denom) => {
 
   return `${value}-${displayDenom}`.toUpperCase()
 }
-
 // used to format denom to match how it's used in the system
 // Example:  ukava => ukava-a
 const formatRewardDenom = (denom) => {
@@ -126,76 +144,69 @@ const formatRewardDenom = (denom) => {
 }
 
 const commonDenomMapper = (denom) => {
-  let formattedDenom;
-  switch(denom.toLowerCase()) {
-    case 'btc':
-      formattedDenom = 'btcb-a';
-      break;
-    case 'usdx':
-      formattedDenom = denom;
-      break;
-    case 'kava':
-      formattedDenom = 'ukava-a';
-      break;
-    case 'ukava':
-      formattedDenom = 'ukava-a';
-      break;
-    case 'xrp':
-      formattedDenom = 'xrpb-a';
-      break;
-    default:
-      formattedDenom = denom + '-a';
-      break;
+  const commonDenoms = {
+    "btc": "btcb-a",
+    "uatom-a": "uatom-a",
+    "atom": "uatom-a",
+    "usdx": "usdx",
+    "kava": "ukava-a",
+    "xrp": "xrpb-a",   
+    "akt": "akt-a",
+    "luna": "luna-a",
+    "osmo":"osmo-a" 
+  };
+  const commonDenom = commonDenoms[denom];
+  if (commonDenom) {
+    return commonDenom;
   }
-  return formattedDenom
+  return denom + '-a';
 }
 
-// gets the human readable ibc denom and saves it in a map so we don't keep requesting it 
-const cache = new Map(); 
-const ibcDenomMapper = async (denom) => {
-  // if (!denom.includes("ibc")) return;
-  // if (cache.has(denom)) {
-  //   return cache.get(denom);  
-  // };
-  // const request = await fetch(BASE_URL + 'ibc/apps/transfer/v1/denom_traces/' + denom.replace("ibc/",""));
-  // const ibcDenom = await request.json();
-  // cache.set(denom, ibcDenom.denom_trace.base_denom);
-  // return ibcDenom.denom_trace.base_denom; 
-  return denom;
-}; 
+const ibcDenomMapper = (denom) => {
+  if (!denom.includes("ibc")) {
+    return denom;
+  };
 
-const normalizeDenoms = async (denomsList) => {
-  const readable = [];
-  for (let d of denomsList){
-    if (d.denom.includes('ibc')){
-      const parsedDenom = await ibcDenomMapper(d.denom); 
-      readable.push({...d, denom: parsedDenom})
-    } else {
-        readable.push(d);
-    }
-  }
-  return readable;
+  if (ibcDenoms.hasOwnProperty(denom)) {
+    return ibcDenoms[denom];
+  };
 };
 
-const normalizeCollateralTypes = async (params, isPool = false) => {
-  const readableParams = []; 
-  for (const param of params){
-    if (param.collateral_type.includes("ibc")){
-      let readableCollateralType;
-      if (isPool){
-        readableCollateralType = await ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
-      } 
-      else {
-        readableCollateralType = await ibcDenomMapper(param.collateral_type);
-      }
-    
-      readableParams.push({...param, collateral_type: readableCollateralType});
+const normalizeDenoms = (denomsList) => {
+  const readableDenoms = [];
+  for (let d of denomsList) {
+    if (d.denom.includes('ibc')) {
+      const parsedDenom = ibcDenomMapper(d.denom);
+      readableDenoms.push({ ...d, denom: parsedDenom })
     } else {
-      readableParams.push(param); 
+      readableDenoms.push(d);
+    }
+  }
+  return readableDenoms;
+};
+
+// 
+const normalizeCollateralTypes = (params, isPool = false) => {
+  const readableParams = [];
+  for (const param of params) {
+    if (param.collateral_type.includes("ibc")) {
+      let readableCollateralType;
+      if (isPool) {
+        readableCollateralType = ibcDenomMapper(param.collateral_type.split(":")[0]) + ":usdx";
+      }
+      else {
+        readableCollateralType = ibcDenomMapper(param.collateral_type);
+      }
+      readableParams.push({ ...param, collateral_type: readableCollateralType });
+    }
+    // keep as is 
+    else {
+      readableParams.push(param);
     };
   };
-  return readableParams; 
-}; 
+
+  return readableParams;
+};
 
 
 const emptyCoin = (denom) => { return { denom, amount: 0 } }
@@ -259,7 +270,7 @@ const mapUsdxLimits = async (denoms, cdpParamsData) => {
   const mappedLimits = {};
   if(cdpParamsData) {
     for (const denom of cdpParamsData.collateral_params) {
-      const debtLimit = denom.debt_limit ? Number(denom.debt_limit.amount)/FACTOR_SIX : 0;
+      const debtLimit = denom.debt_limit ? Number(denom.debt_limit.amount)/FACTOR_6 : 0;
       mappedLimits[denom.type] = { debtLimit }
     }
   }
@@ -364,7 +375,7 @@ const mapUsdxBorrowed = async (denoms, siteData) => {
     const platformData = siteData['platformAmounts'][denom] || siteData['platformAmounts'][denom.slice(1)];
     let usdxAmount = 0;
     if(cdpParamsData && platformData) {
-      const usdxBorrowedAndFees = Number(platformData.principal / FACTOR_SIX);
+      const usdxBorrowedAndFees = Number(platformData.principal / FACTOR_6);
       usdxAmount = usdxBorrowedAndFees > cdpParamsData.debtLimit ? cdpParamsData.debtLimit : usdxBorrowedAndFees;
       coins['total'] += usdxAmount;
     }
@@ -470,13 +481,20 @@ const setTotalLockedDisplayValues = async (denoms, siteData, cssIds) => {
 
 const setRewardsApyDisplayValues = async (denoms, siteData, cssIds) => {
   const denomConversions = siteData['denomConversions']
-
+  console.log(siteData["platformAmounts"])
   for (const denom of denoms) {
-    if (denom === 'usdx' || denom.includes("bnb") || denom.includes("xrp") || denom.includes("hbtc") || denom.includes("btc") || denom.includes("busd")) continue; 
-   
+    if (denom === "usdx") continue;    
     const denomPrice = siteData['prices'][denom].price;
     const cssId = cssIds[denom]['apy'];
-    const lockedAmount = siteData['platformAmounts'][denom]?.collateral || siteData['platformAmounts'][denom.slice(1)].collateral;
+    let lockedAmount = 0; 
+    if (siteData['platformAmounts'][denom]){
+      lockedAmount = siteData['platformAmounts'][denom]?.collateral
+    } else {
+      // expect it to skip ibc denoms for now and adds a warning for easily fixing once intergrated
+      console.warn(`${denom} not found in platformAmounts object, skiping calculation`);
+      continue; 
+    }
+
     const usdxMintingRewards = siteData['incentiveParamsData'][denom]
 
     let rewardsDenom = commonDenomMapper(usdxMintingRewards.denom);
@@ -504,8 +522,11 @@ const setTotalAssetDisplayValue = async (siteData, cssIds) => {
   const cssId = cssIds['totalAssetValue'];
   const totalSupplied = siteData['totalSupplied'] ? siteData['totalSupplied'].total : 0
   const totalBorrowed = siteData['usdxBorrowed'] ? siteData['usdxBorrowed'].total : 0
-
   const totalAssetValue = usdFormatter.format(totalSupplied + totalBorrowed);
+  if (totalBorrowed === 0 || totalSupplied === 0){
+    // this should never happen!!!
+    console.warn(`oops totalBorrowed or totalSupplied are resolving to zero`);
+  } 
   setDisplayValueById(cssId, noDollarSign(totalAssetValue))
 }
 
@@ -518,8 +539,14 @@ const setBorrowApyDisplayValues = async (denoms, siteData, cssIds) => {
   const cdpInterestRate = siteData['cdpInterestRate'];
 
   for (const denom of denoms) {
-    const borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
+    // skip usdx 
+    if (denom === 'usdx') continue;  
+    let borrowApy = cdpInterestRate[denom].stabilityFeePercentage;
     const cssId = cssIds[denom]['cdpInterestRate'];
+    if (borrowApy === undefined){
+      console.warn(`${cssId} has undefined borrowApy, falling back to 0%`);
+      borrowApy = 0; 
+    }
     setDisplayValueById(cssId, borrowApy + "%")
   }
 };
@@ -530,7 +557,7 @@ const setHardRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
   for (const denom of denoms) {
-    const collatDenomPrice = prices[denom].price;
+    const collatDenomPrice = prices[denom]?.price || 0;
     let balanceAmount = 0;
     if (balances[denom]) {
       balanceAmount= Number(balances[denom].amount)
@@ -546,7 +573,7 @@ const setHardRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
     const denominator = balanceCurrency * collatDenomPrice;
     let apy = '0.00%';
 
-    if (denominator !==0) {
+    if (denominator !== 0) {
       // use usdFormatter to truncate to 2 decimals and round
       const apyWithDollarSign = usdFormatter.format((numerator / denominator) * 100);
       apy = formatPercentage(noDollarSign(apyWithDollarSign));
@@ -684,9 +711,9 @@ const updateDisplayValues = async (denoms) => {
 
   // used to show loading skeltons while data is loading, then remove them once data is loaded
 
-  $(".metric-blur").css("background-color", "transparent")
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({"display": "block", "text-align": "center"})
+  // $(".metric-blur").css("background-color", "transparent")
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({"display": "block", "text-align": "center"})
 };
 
 const main = async () => {
@@ -694,6 +721,8 @@ const main = async () => {
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a',
+    'uatom-a','akt-a', 'luna-a',
+    'osmo-a',
     // 'uakt-a', 'luna-a', 'uosmo-a', 'uatom-a' // uncomment after governance proposal
   ]
 

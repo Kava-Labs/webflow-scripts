@@ -73,9 +73,13 @@ const commonDenomMapper = (denom) => {
   const commonDenoms = {
     "btc": "btcb-a",
     "uatom-a": "uatom-a",
+    "atom": "uatom-a",
     "usdx": "usdx",
     "kava": "ukava-a",
-    "xrp": "xrpb-a",
+    "xrp": "xrpb-a",   
+    "akt": "akt-a",
+    "luna": "luna-a",
+    "osmo":"osmo-a" 
   };
   const commonDenom = commonDenoms[denom];
   if (commonDenom) {
@@ -119,6 +123,15 @@ const formatCssId = (value, denom) => {
       break;
     case 'uatom-a':
       displayDenom = 'atom';
+      break;
+    case 'luna-a':
+      displayDenom = 'luna';
+      break;
+    case 'akt-a':
+      displayDenom = 'akt';
+      break;
+    case 'osmo-a':
+      displayDenom = 'osmo'
       break;
     default:
       displayDenom = denom.split('-')[0]
@@ -180,7 +193,13 @@ const denomLabel = (v) => {
     case 'btcb-a':
       return 'BTC'
     case 'uatom-a':
-      return "ATOM"
+      return "ATOM";
+    case 'luna-a':
+      return 'LUNA';
+    case 'akt-a':
+      return 'AKT';
+    case 'osmo-a':
+      return "OSMO"
     default:
       return v.split('-')[0].toUpperCase()
   }
@@ -207,12 +226,13 @@ const supplyLimitByDenom = (denom, bep3ParamsDataOld) => {
   return hasSupplyLimit ? (Number(denomParams.supply_limit.limit) / FACTOR_EIGHT) : 0
 };
 
+// might not be needed
 const setDenomTotalSupplied = (denomSupplyFromAcct, factor, denomPrice, denomLockedId) => {
   const denomTotalSupplyCoin = denomSupplyFromAcct / factor;
   const denomTotalSupplyValue = Number(denomTotalSupplyCoin * denomPrice);
   setDisplayValue(noDollarSign(denomTotalSupplyValue), denomLockedId);
 
-  return denomTotalSupplyValue
+  return denomTotalSupplyValue; 
 }
 
 const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
@@ -225,7 +245,7 @@ const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
 
     const desktopCssId = cssIds[denom].totalSupplied['d']
     const mobileCssId = cssIds[denom].totalSupplied['m']
-
+    console.log(denom, formattedTotalSupplied, " total supplied")
     setDisplayValueById(desktopCssId, formattedTotalSupplied)
     setDisplayValueById(mobileCssId, formattedTotalSupplied)
   }
@@ -241,7 +261,7 @@ const setAssetLimitUsdxDisplayValue = async (denoms, siteData, cssIds) => {
 
     const usdxDebtLimit = formatMoneyNoDecimalsOrLabels(cdpParamsData[denom].debtLimit)
     const formattedUsdxDebitLimit = usdxDebtLimit + ' ' + denomLabel('usdx')
-
+    console.log(formattedUsdxDebitLimit, denom, "usdx asset limit");
     setDisplayValueById(desktopCssId, formattedUsdxDebitLimit)
     setDisplayValueById(mobileCssId, formattedUsdxDebitLimit)
   }
@@ -256,6 +276,7 @@ const setAssetLimitDisplayValues = async (denoms, siteData, cssIds) => {
     const mobileCssId = cssIds[denom]['assetLimit']['m']
 
     const formattedAssetLimit = formatMoneyNoDecimalsOrLabels(bep3ParamsData[denom]) + ' ' + denomLabel(denom)
+    console.log(denom, formattedAssetLimit, " the asset limits"); 
     setDisplayValueById(desktopCssId, formattedAssetLimit)
     setDisplayValueById(mobileCssId, formattedAssetLimit)
   }
@@ -329,7 +350,7 @@ const mapPrices = async (denoms, pricefeedResult) => {
   }
 
   for (const denom of denoms) {
-    let mappedPrice = mappedPrices[denom] || mappedPrices[denom.slice(1)];
+    let mappedPrice = mappedPrices[denom];
     let price = { price: 0 };
 
     if (mappedPrice) {
@@ -592,7 +613,7 @@ const setPriceDisplayValues = async (denoms, siteData, cssIds) => {
     let kavaDefiDesktopCssId = cssIds[denom]['price']['d'];
     let kavaDefiMobileCssId = cssIds[denom]['price']['md'];
     const formattedPrice = usdFormatter.format(price)
-
+    console.log(denom, formattedPrice, "the price")
     setDisplayValueById(kavaLendingCssId, formattedPrice)
     setDisplayValueById(kavaDefiDesktopCssId, formattedPrice)
     setDisplayValueById(kavaDefiMobileCssId, formattedPrice)
@@ -660,8 +681,8 @@ const setTotalBorrowedBorrowLimitAndLimitBarDisplayValues = async (denoms, siteD
     };
 
     const percentUsdxUtilization = (rawUsdxUtilization * 100).toFixed(2) + "%";
-    const element = $(`.percent-line-usdx-${denom}`)
-    if (element) { element.css("width", percentUsdxUtilization); }
+    // const element = $(`.percent-line-usdx-${denom}`)
+    // if (element) { element.css("width", percentUsdxUtilization); }
   }
 }
 
@@ -741,7 +762,7 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
-
+  console.log(totalAssetsSuppliedUsd, 'total assets')
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
 
@@ -765,7 +786,7 @@ const setTotalAssetsBorrowedDisplayValue = async (siteData, cssIds) => {
     totalAssetsBorrowed += denomBorrowedUSD;
   };
   const totalAssetsBorrowedUsd = usdFormatter.format(totalAssetsBorrowed);
-
+  console.log(totalAssetsBorrowedUsd, "total borrowed"); 
   setDisplayValueById(cssId, noDollarSign(totalAssetsBorrowedUsd));
 };
 
@@ -796,7 +817,7 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
     total += suppliedDenomUsd
     const desktopCssId = cssIds[denom]['marketCap']['d']
     const mobileCssId = cssIds[denom]['marketCap']['m']
-
+    console.log(suppliedDenomUsd, denom, "market cap"); 
     setDisplayValueById(desktopCssId, suppliedDenomUsd > 1000000 ? formatMoneyMillions(suppliedDenomUsd) : formatInThousands(suppliedDenomUsd))
     setDisplayValueById(mobileCssId, suppliedDenomUsd > 1000000 ? formatMoneyMillions(suppliedDenomUsd) : formatInThousands(suppliedDenomUsd))
   }
@@ -817,20 +838,21 @@ const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
     const formattedSupply = formatMoneyNoDecimalsOrLabels(supply) + ' ' + denomLabel(denom)
     const desktopCssId = cssIds[denom]['supplied']['d']
     const mobileCssId = cssIds[denom]['supplied']['m']
+    console.log(formattedSupply, denom, 'supply ')
     setDisplayValueById(desktopCssId, formattedSupply)
     setDisplayValueById(mobileCssId, formattedSupply)
   }
 }
 
 const setDisplayColor = (cssId, color) => {
-  $(`#${cssId}`).css({ color: color });
+  // $(`#${cssId}`).css({ color: color });
 }
 
 const setDisplayValueById = (cssId, value) => {
-  const lastElement = $(`#${cssId}`).last();
-  const firstElement = $(`#${cssId}`).first();
-  if (lastElement) { lastElement.html(value) };
-  if (firstElement) { firstElement.html(value) };
+  // const lastElement = $(`#${cssId}`).last();
+  // const firstElement = $(`#${cssId}`).first();
+  // if (lastElement) { lastElement.html(value) };
+  // if (firstElement) { firstElement.html(value) };
 };
 
 const updateDisplayValues = async (denoms) => {
@@ -976,6 +998,7 @@ const updateDisplayValues = async (denoms) => {
   const defiCoinsSupply = mapSupplyAndMarket(denoms, siteData)
   siteData['defiCoinsSupply'] = defiCoinsSupply;
   // set display values
+  console.log(siteData)
   await setTotalEarningsDisplayValues(denoms, siteData, cssIds)
   await setPriceDisplayValues(denoms, siteData, cssIds)
   await setPriceChangeDisplayValues(denoms, siteData, cssIds)
@@ -991,9 +1014,9 @@ const updateDisplayValues = async (denoms) => {
   await setSupplyDisplayValues(denoms, siteData, cssIds);
   await setBorrowApyDisplayValues(denoms, siteData, cssIds);
 
-  $(".metric-blur").css("background-color", "transparent")
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({ "display": "block", "text-align": "center" })
+  // $(".metric-blur").css("background-color", "transparent")
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({ "display": "block", "text-align": "center" })
 
 };
 
@@ -1002,8 +1025,8 @@ const main = async () => {
     'bnb-a', 'btcb-a', 'busd-a',
     'hbtc-a', 'xrpb-a', 'hard-a',
     'ukava-a', 'usdx', 'swp-a',
-    'uatom-a',
-    // 'uakt-a', 'luna-a', 'uosmo-a',
+    'uatom-a','akt-a', 'luna-a',
+    'osmo-a',
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);

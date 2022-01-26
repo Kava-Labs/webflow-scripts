@@ -43,7 +43,7 @@ const findNonUsdxTokenInPool = (pool) => {
 const findUsdxTokenInPool = (pool) => {
   const usdxAsset = pool.coins[0].denom === 'usdx' ? pool.coins[0] : pool.coins[1];
   return usdxAsset;
-}
+};
 
 const formatPercentage = (value) => {
   return value +"%";
@@ -471,3 +471,5 @@ const main = async () => {
 const sleep = (ms = 10000) => { return new Promise(resolve => setTimeout(resolve, ms)); };
 
 main();
+
+

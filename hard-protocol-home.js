@@ -142,9 +142,13 @@ const commonDenomMapper = (denom) => {
   const commonDenoms = {
     "btc": "btcb-a",
     "uatom-a": "uatom-a",
+    "atom": "uatom-a",
     "usdx": "usdx",
     "kava": "ukava-a",
-    "xrp": "xrpb-a",
+    "xrp": "xrpb-a",   
+    "akt": "akt-a",
+    "luna": "luna-a",
+    "osmo":"osmo-a",
   };
   const commonDenom = commonDenoms[denom];
   if (commonDenom) {
@@ -314,7 +318,7 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
   const hardTotalSupplied = siteData['hardTotalSupplied'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
-  console.log(hardTotalSupplied)
+
   for (const denom of denoms) {
     const suppliedHard = hardTotalSupplied[denom];
     const suppliedHardAmount = suppliedHard ? Number(suppliedHard.amount) : 0;
@@ -323,6 +327,7 @@ const setTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
 
     const usdValue = currencyValue * prices[denom].price;
     const denomTotalSupplied = usdValue > 1000000 ? displayInMillions(usdValue) : displayInThousands(usdValue);
+    console.log(denom, usdValue, " total supplied")
     setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
@@ -339,6 +344,7 @@ const setTotalBorrowedDisplayValues = async (denoms, siteData, cssIds) => {
 
     const usdValue = currencyValue * prices[denom].price;
     const denomTotalSupplied = usdValue >= 10 ** 6 ? displayInMillions(usdValue) : displayInThousands(usdValue);
+    console.log(denom, usdValue, " total borrowed")
     setDisplayValueById(cssId, denomTotalSupplied);
   }
 };
@@ -348,6 +354,7 @@ const setRewardApyDisplayValue = async (denoms, siteData, cssIds) => {
   const balances = siteData['hardTotalSupplied'];
   const prices = siteData['prices'];
   const denomConversions = siteData['denomConversions'];
+  console.log(siteData, 'site data')
   for (const denom of denoms) {
     const collatDenomPrice = prices[denom].price;
     let balanceAmount = 0;
@@ -381,6 +388,7 @@ const setSupplyApyDisplayValue = async (denoms, siteData, cssIds) => {
     const apy = interestRates[denom] ? interestRates[denom] : '0.00';
     const cssId = cssIds[denom].supplyApy;
     const formattedAPY = formatPercentage((noDollarSign(apy) * 100).toFixed(2));
+    console.log(formattedAPY, denom, " interest");
     setDisplayValueById(cssId, formattedAPY);
   }
 };
@@ -402,7 +410,7 @@ const updateDisplayValues = async (denoms) => {
 
   let siteData = {};
   const cssIds = mapCssIds(denoms);
-
+  console.log(cssIds)
   const pricefeedPrices = await pricefeedResponse.json();
   const hardTotalSuppliedJson = await hardTotalSuppliedResponse.json();
   const hardTotalBorrowedJson = await hardTotalBorrowedResponse.json();
@@ -441,25 +449,25 @@ const updateDisplayValues = async (denoms) => {
   siteData['hardSupplyRewardsPerYearByDenom'] = hardSupplyRewardsPerYearByDenom;
 
   // set display values in ui
-  await setTotalAssetValueDisplayValue(siteData, cssIds);
-  await setTotalHardDistributedDisplayValue(siteData, cssIds);
-  await setTotalSuppliedDisplayValues(denoms, siteData, cssIds);
-  await setTotalBorrowedDisplayValues(denoms, siteData, cssIds);
-  await setRewardApyDisplayValue(denoms, siteData, cssIds);
-  await setSupplyApyDisplayValue(denoms, siteData, cssIds);
+  await setTotalAssetValueDisplayValue(siteData, cssIds);  // done
+  await setTotalHardDistributedDisplayValue(siteData, cssIds);   // undeeded? double check!
+  await setTotalSuppliedDisplayValues(denoms, siteData, cssIds); // done 
+  await setTotalBorrowedDisplayValues(denoms, siteData, cssIds); // done 
+  await setRewardApyDisplayValue(denoms, siteData, cssIds);  // todo 
+  await setSupplyApyDisplayValue(denoms, siteData, cssIds);  // todo 
   console.log(siteData)
-  $(".metric-blur").css("background-color", "transparent");
-  $(".metric-blur").addClass('without-after');
-  $(".api-metric").css({ "display": "block", "text-align": "center" });
+  // $(".metric-blur").css("background-color", "transparent");
+  // $(".metric-blur").addClass('without-after');
+  // $(".api-metric").css({ "display": "block", "text-align": "center" });
 }
 
 const main = async () => {
   const denoms = [
     'bnb-a', 'btcb-a', 'busd-a',
     'xrpb-a', 'hard-a', 'usdx',
-    'ukava-a', 'uatom-a'
-    // 'uakt-a', 'luna-a',
-    // 'uosmo-a', 'uatom-a'
+    'ukava-a', 'uatom-a',
+    'akt-a', 'luna-a',
+    'osmo-a',
   ];
   await updateDisplayValues(denoms);
   await sleep(30000);
