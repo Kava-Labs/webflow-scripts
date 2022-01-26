@@ -86,9 +86,9 @@ function updateUI(cssIds, hardData){
     setAssetDisplayValues(denomsToShow, totalHardDepositedByDenomUSD, totalHardBorrowedByDenomUSD,  rewardsAPY, interestRates, cssIds);
 
     setTotalAssetsValueDisplayValue(hardData.totalHardAssetsUSD, cssIds);
-    // $(".metric-blur").css("background-color", "transparent");
-    // $(".metric-blur").addClass('without-after');
-    // $(".api-metric").css({ "display": "block", "text-align": "center" });
+    $(".metric-blur").css("background-color", "transparent");
+    $(".metric-blur").addClass('without-after');
+    $(".api-metric").css({ "display": "block", "text-align": "center" });
 };
 
 async function hardPageInit(){
