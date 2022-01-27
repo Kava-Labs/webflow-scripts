@@ -1,4 +1,4 @@
-const SWAP_DATA_URL = "http://localhost:8888/.netlify/functions/swap";
+const SWAP_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functions/swap";
 
 function formatElementId(value, pool) {
   return `${value}-${pool}`.toUpperCase();
@@ -72,11 +72,15 @@ function setRewardsPerYearDisplay(elementIds, poolsReward) {
   };
 };
 
-function updateUI(elementIds, totalLiquidity, swapVolumes, swapPoolTvl, rewardsPerYear) {
+function updateSwapUI(elementIds, totalLiquidity, swapVolumes, swapPoolTvl, rewardsPerYear) {
   setTotalLiquidityDisplay(elementIds, totalLiquidity);
   setSwapVolumesDisplay(elementIds, swapVolumes);
   setSwapPoolTvlsDisplay(elementIds, swapPoolTvl);
   setRewardsPerYearDisplay(elementIds, rewardsPerYear);
+
+  $(".metric-blur").css("background-color", "transparent");
+  $(".metric-blur").addClass('without-after');
+  $(".api-metric").css({"display": "block", "text-align": "center"});
 };
 
 
@@ -89,7 +93,7 @@ async function getSwapData() {
 async function swapPageInit() {
   const swapData = await getSwapData();
   const elementIds = mapelementIds(Object.keys(swapData.swapPoolTVLS));
-  updateUI(elementIds, swapData.totalAssetsLockedAcrossPools, swapData.swapPoolsVolume, swapData.swapPoolTVLS, swapData.rewardsPerYear);
+  updateSwapUI(elementIds, swapData.totalAssetsLockedAcrossPools, swapData.swapPoolsVolume, swapData.swapPoolTVLS, swapData.rewardsPerYear);
   await sleep(30000);
 
   swapPageInit();
