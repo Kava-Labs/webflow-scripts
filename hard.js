@@ -1,7 +1,7 @@
 const HARD_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functions/hard";
 
 
-function setDisplayValueById(cssId, value){
+function setDisplayValueByIdHard(cssId, value){
     const element = document.getElementById(cssId)
     if (element) { element.innerHTML = value; }
 };
@@ -68,16 +68,16 @@ function setAssetDisplayValues(denoms, totalSuppliedUsdPerDenoms,totalBorrowedUs
         // this log should match the lend page 
         // console.log(denom, totalSuppliedForDenom, totalBorrowedForDenom, rewardsAPYForDenom, supplyAPYForDenom);
 
-        setDisplayValueById(cssIdSupplied,  totalSuppliedForDenom); 
-        setDisplayValueById(cssIdBorrowed,  totalBorrowedForDenom);
-        setDisplayValueById(cssIdRewardApy, rewardsAPYForDenom);
-        setDisplayValueById(cssIdSupplyApy, supplyAPYForDenom);
+        setDisplayValueByIdHard(cssIdSupplied,  totalSuppliedForDenom); 
+        setDisplayValueByIdHard(cssIdBorrowed,  totalBorrowedForDenom);
+        setDisplayValueByIdHard(cssIdRewardApy, rewardsAPYForDenom);
+        setDisplayValueByIdHard(cssIdSupplyApy, supplyAPYForDenom);
     }); 
 }; 
 
 function setTotalAssetsValueDisplayValue(totalAssetValue, cssIds){
   const cssId = cssIds['TAV'];
-  setDisplayValueById(cssId, totalAssetValue);
+  setDisplayValueByIdHard(cssId, totalAssetValue);
 };
 
 
