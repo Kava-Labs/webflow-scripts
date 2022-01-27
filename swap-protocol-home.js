@@ -223,7 +223,7 @@ const mapSwpPoolData =  (denoms, siteData, swpPoolDataJson) => {
 
     return coinMap;
   }, {});
-
+  console.log(coins);
   return coins;
 }
 
@@ -436,7 +436,7 @@ const updateDisplayValues = async(denoms, pools) => {
 
   const swpVolumesByPoolInUSD = await getVolumesByPool(await normalizeSwpPoolVolume(swpPoolVolumeJson), siteData);
   siteData['swpVolumesByPoolInUSD'] = swpVolumesByPoolInUSD;
-
+  console.log(cssIds)
   await setTVLAndTAVDisplayValues(siteData, cssIds);
   await setRewardApyDisplayValue(pools, siteData, cssIds);
   await setDailyVolumesDisplayValues(siteData, cssIds);
@@ -462,7 +462,7 @@ const main = async () => {
     // 'luna-usdx','uakt-usdx',
     // 'uosmo-usdx', 'uatom-usdx',
   ];
-
+  
   await updateDisplayValues(denoms, pools);
   await sleep(30000);
   main();

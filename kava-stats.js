@@ -253,7 +253,7 @@ const setDenomTotalSuppliedDisplayValues = async (denoms, siteData, cssIds) => {
 
 const setAssetLimitUsdxDisplayValue = async (denoms, siteData, cssIds) => {
   const cdpParamsData = siteData['cdpParamsData'];
-
+  console.log(cdpParamsData)
   for (const denom of denoms) {
     if (denom !== 'usdx') { continue; }
     const desktopCssId = cssIds[denom]['assetLimit']['d']
@@ -269,7 +269,7 @@ const setAssetLimitUsdxDisplayValue = async (denoms, siteData, cssIds) => {
 
 const setAssetLimitDisplayValues = async (denoms, siteData, cssIds) => {
   const bep3ParamsData = siteData['bep3ParamsData'];
-
+  console.log(bep3ParamsData, 'here that is ')
   for (const denom of denoms) {
     if (isKavaNativeAsset(denom)) { continue; }
     const desktopCssId = cssIds[denom]['assetLimit']['d']
@@ -468,14 +468,19 @@ const mapIncentiveParams = async (denoms, usdxMintingParams) => {
 }
 
 const mapSuppliedAmounts = (denoms, coins) => {
+ 
   let formattedCoins = {};
 
   let mappedCoins = {}
+  console.log(coins, "coins are here")
   for (const coin of coins) {
+    console.log(coin.amount, coin.denom)
     mappedCoins[commonDenomMapper(coin.denom)] = { denom: coin.denom, amount: coin.amount };
   }
 
   for (const denom of denoms) {
+    if (denom === "u-atom") {
+    }
     let coin = emptyCoin(denom);
     const accountCoin = mappedCoins[denom];
     if (accountCoin) {
@@ -483,16 +488,17 @@ const mapSuppliedAmounts = (denoms, coins) => {
     }
     formattedCoins[denom] = coin
   }
+  console.log(formattedCoins, "here is the formmated coins in supplieud data")
   return formattedCoins
 }
 
 const mapBep3Supplies = async (denoms, bep3SupplyData) => {
   const coins = {};
-
   const mappedBep3Supplies = {};
   for (const denom of bep3SupplyData) {
     const currentSupply = denom.current_supply;
     const amount = currentSupply ? currentSupply.amount : 0
+    console.log(currentSupply.amount, commonDenomMapper[currentSupply.denom])
     mappedBep3Supplies[commonDenomMapper(currentSupply.denom)] = Number(amount)
   }
 
@@ -534,6 +540,7 @@ const mapSupplyAndMarket = (denoms, siteData) => {
   const bep3SupplyData = siteData['bep3SupplyData']
   const denomConversions = siteData['denomConversions']
   const coins = {};
+  console.log(supplydata, bep3SupplyData, "here is that data");
   for (const denom of denoms) {
     // think we do this because of the double spend?
     let denomTotalSupply = 0;
@@ -559,6 +566,7 @@ const mapSupplyAndMarket = (denoms, siteData) => {
     const denomTotalSupplyCoin = denomTotalSupply / factor;
     coins[denom] = denomTotalSupplyCoin
   }
+
   return coins
 }
 
@@ -759,9 +767,11 @@ const setTotalAssetsSuppliedDisplayValue = async (siteData, cssIds) => {
     };
 
     const denomSuppliedUSD = (denomSupplied * price) / factor;
+    console.log(denomSuppliedUSD, denom)
     totalAssetsSupplied += denomSuppliedUSD;
   };
   const totalAssetsSuppliedUsd = usdFormatter.format(totalAssetsSupplied);
+  
   console.log(totalAssetsSuppliedUsd, 'total assets')
   setDisplayValueById(cssId, noDollarSign(totalAssetsSuppliedUsd))
 };
@@ -826,7 +836,8 @@ const setMarketCapDisplayValues = async (denoms, siteData, cssIds) => {
 }
 
 const setSupplyDisplayValues = async (denoms, siteData, cssIds) => {
-  const defiCoinsSupply = siteData['defiCoinsSupply']
+  const defiCoinsSupply = siteData['defiCoinsSupply'];
+  console.log(defiCoinsSupply, "the defi coins ")
   for (const denom of denoms) {
     let supply = 0;
     if (defiCoinsSupply[denom] !== undefined) {
@@ -867,7 +878,7 @@ const updateDisplayValues = async (denoms) => {
     xrpbMarketResponse: () => fetch(BINANACE_URL + "ticker/24hr?symbol=XRPUSDT"),
     usdxMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/usdx'),
     atomMarketResponse: () => fetch("https://api.coingecko.com/api/v3/coins/cosmos"),
-    // lunaMarketResponse: () => fetch("https://api.coingecko.com/api/v3/coins/terra-luna"),
+    lunaMarketResponse: () => fetch("https://api.coingecko.com/api/v3/coins/terra-luna"),
     swpMarketResponse: () => fetch('https://api.coingecko.com/api/v3/coins/kava-swap'),
     supplyAccountResponse: () => fetch(BASE_URL + 'bank/balances/kava1wq9ts6l7atfn45ryxrtg4a2gwegsh3xha9e6rp'),
     supplyTotalResponse: () => fetch(BASE_URL + "bank/total"),
@@ -903,7 +914,7 @@ const updateDisplayValues = async (denoms) => {
     totalCollateralResponse,
     totalPrincipalResponse,
     atomMarketResponse,
-    // lunaMarketResponse,
+    lunaMarketResponse,
   } = await makeData();
 
 

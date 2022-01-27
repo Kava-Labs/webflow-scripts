@@ -242,6 +242,7 @@ const mapPlatformAmounts = async (totalCollateral, totalPrincipal) => {
         const {collateral_type, amount: { amount }} = denom;
         coins[collateral_type].principal = amount; 
       };
+      console.log(coins)
      return coins;
 };
 
@@ -282,6 +283,7 @@ const mapUsdxLimits = async (denoms, cdpParamsData) => {
     if(cdpParam) { limit = cdpParam.debtLimit }
     coins[denom] = { debtLimit: limit }
   }
+  console.log(coins, "usdx limits");
   return coins;
 };
 
@@ -645,8 +647,8 @@ const updateDisplayValues = async (denoms) => {
   const totalPrincipalJson = await totalPrincipalResponse.json(); 
 
   let siteData = {}
-  const cssIds = mapCssIds(denoms)
 
+  console.log(cssIds);
   const denomConversions = setConversionFactors(denoms)
   siteData['denomConversions'] = denomConversions;
 
@@ -714,6 +716,7 @@ const updateDisplayValues = async (denoms) => {
   // $(".metric-blur").css("background-color", "transparent")
   // $(".metric-blur").addClass('without-after');
   // $(".api-metric").css({"display": "block", "text-align": "center"})
+
 };
 
 const main = async () => {
