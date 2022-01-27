@@ -132,11 +132,16 @@ function setTotalAssetUsdDisplayValue(elementIds, totalAssetUsd){
     setDisplayValueById(elementId, totalAssetUsd.replace("$", ""));
 };
 
-function updateUI(elementIds, totalLocked, totalBorrowed, rewardsAPY, totalAsset) {
+function updateMintUI(elementIds, totalLocked, totalBorrowed, rewardsAPY, totalAsset) {
     setTotalAssetUsdDisplayValue(elementIds, totalAsset);
     setTotalBorrowedDisplayValues(elementIds, totalBorrowed);
     setTotalLockedDisplayValues(elementIds, totalLocked);
     setRewardsAPYDisplayValues(elementIds, rewardsAPY);
+
+    $(".metric-blur").css("background-color", "transparent")
+    $(".metric-blur").addClass('without-after');
+    $(".api-metric").css({"display": "block", "text-align": "center"})
+
 };
   
   
@@ -149,7 +154,7 @@ async function getMintData() {
 async function mintPageInit() {
     const mintData = await getMintData();
     const elementIds = mapElementIds();
-    updateUI(elementIds, mintData.totalLocked, mintData.totalBorrowed, mintData.rewardsAPY, mintData.totalAssetValues);
+    updateMintUI(elementIds, mintData.totalLocked, mintData.totalBorrowed, mintData.rewardsAPY, mintData.totalAssetValues);
     await sleep(30000);
     mintPageInit();
 };
