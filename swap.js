@@ -22,16 +22,16 @@ function mapelementIds(pools) {
   for (const pool of pools) {
     ids[pool] = {};
     ids[pool].totalValueLocked = {
-      d: formatElementId('tvl', pool),
-      m: formatElementId('tvl-m', pool)
+      d: formatElementId('tvl', pool.replace(":","-")),
+      m: formatElementId('tvl-m', pool.replace(":","-"))
     };
     ids[pool].rewardApy = {
-      d: formatElementId('rapy', pool),
-      m: formatElementId('rapy-m', pool)
+      d: formatElementId('rapy', pool.replace(":","-")),
+      m: formatElementId('rapy-m', pool.replace(":","-"))
     };
     ids[pool].dailyVolume = {
-      d: formatElementId('dv', pool),
-      m: formatElementId('dv-m', pool)
+      d: formatElementId('dv', pool.replace(":","-")),
+      m: formatElementId('dv-m', pool.replace(":","-"))
     };
   }
   return ids;
