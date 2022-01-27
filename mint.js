@@ -2,107 +2,32 @@ const MINT_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/function
 
 
 function setDisplayValueById(elementId, value) {
-    console.log(elementId, value); 
     const element = document.getElementById(elementId)
     if (element) { element.innerHTML = value; }
 };
 
-function mapElementIds(){
-    return {
-        "totalAssetValue": "TOTAL-VALUE-LOCKED",
-        "totalRewardsDistributed": "TOTAL-REWARDS-DISTRIBUTED",
-        "BNB": {
-            "totalBorrowed": "TB-BNB",
-            "totalLocked": "TL-BNB",
-            "apy": "APY-BNB",
-            "cdpInterestRate": "BAPY-BNB",
-            "hardRewardApy": "HRAPY-BNB"
-        },
-        "BTCB": {
-            "totalBorrowed": "TB-BTCB",
-            "totalLocked": "TL-BTCB",
-            "apy": "APY-BTCB",
-            "cdpInterestRate": "BAPY-BTCB",
-            "hardRewardApy": "HRAPY-BTCB"
-        },
-        "BUSD": {
-            "totalBorrowed": "TB-BUSD",
-            "totalLocked": "TL-BUSD",
-            "apy": "APY-BUSD",
-            "cdpInterestRate": "BAPY-BUSD",
-            "hardRewardApy": "HRAPY-BUSD"
-        },
-        "HBTC": {
-            "totalBorrowed": "TB-HBTC",
-            "totalLocked": "TL-HBTC",
-            "apy": "APY-HBTC",
-            "cdpInterestRate": "BAPY-HBTC",
-            "hardRewardApy": "HRAPY-HBTC"
-        },
-        "XRP": {
-            "totalBorrowed": "TB-XRP",
-            "totalLocked": "TL-XRP",
-            "apy": "APY-XRP",
-            "cdpInterestRate": "BAPY-XRP",
-            "hardRewardApy": "HRAPY-XRP"
-        },
-        "HARD": {
-            "totalBorrowed": "TB-HARD",
-            "totalLocked": "TL-HARD",
-            "apy": "APY-HARD",
-            "cdpInterestRate": "BAPY-HARD",
-            "hardRewardApy": "HRAPY-HARD"
-        },
-        "KAVA": {
-            "totalBorrowed": "TB-KAVA",
-            "totalLocked": "TL-KAVA",
-            "apy": "APY-KAVA",
-            "cdpInterestRate": "BAPY-KAVA",
-            "hardRewardApy": "HRAPY-KAVA"
-        },
-        "USDX": {
-            "totalBorrowed": "TB-USDX",
-            "totalLocked": "TL-USDX",
-            "apy": "APY-USDX",
-            "cdpInterestRate": "BAPY-USDX",
-            "hardRewardApy": "HRAPY-USDX"
-        },
-        "SWP": {
-            "totalBorrowed": "TB-SWP",
-            "totalLocked": "TL-SWP",
-            "apy": "APY-SWP",
-            "cdpInterestRate": "BAPY-SWP",
-            "hardRewardApy": "HRAPY-SWP"
-        },
-        "ATOM": {
-            "totalBorrowed": "TB-ATOM",
-            "totalLocked": "TL-ATOM",
-            "apy": "APY-ATOM",
-            "cdpInterestRate": "BAPY-ATOM",
-            "hardRewardApy": "HRAPY-ATOM"
-        },
-        "AKT": {
-            "totalBorrowed": "TB-AKT",
-            "totalLocked": "TL-AKT",
-            "apy": "APY-AKT",
-            "cdpInterestRate": "BAPY-AKT",
-            "hardRewardApy": "HRAPY-AKT"
-        },
-        "LUNA": {
-            "totalBorrowed": "TB-LUNA",
-            "totalLocked": "TL-LUNA",
-            "apy": "APY-LUNA",
-            "cdpInterestRate": "BAPY-LUNA",
-            "hardRewardApy": "HRAPY-LUNA"
-        },
-        "OSMO": {
-            "totalBorrowed": "TB-OSMO",
-            "totalLocked": "TL-OSMO",
-            "apy": "APY-OSMO",
-            "cdpInterestRate": "BAPY-OSMO",
-            "hardRewardApy": "HRAPY-OSMO"
-        }
-    };
+function formatElementId(value, denom){
+    return `${value}-${denom}`.toUpperCase();
+};
+
+function mapElementIds(denoms){
+    let ids = {}
+  // total asset value
+  ids['totalAssetValue'] = 'TOTAL-VALUE-LOCKED'
+
+  // total rewards Distributed
+  ids['totalRewardsDistributed'] = 'TOTAL-REWARDS-DISTRIBUTED'
+
+  // for the market overview table
+  for (const denom of denoms) {
+    ids[denom] = {};
+    ids[denom].totalBorrowed = formatElementId('tb', denom)
+    ids[denom].totalLocked = formatElementId('tl', denom)
+    ids[denom].apy = formatElementId('apy', denom)
+    ids[denom].cdpInterestRate = formatElementId('bapy', denom)
+    ids[denom].hardRewardApy = formatElementId('hrapy', denom)
+  }
+  return ids
 };
 
 
@@ -153,7 +78,7 @@ async function getMintData() {
   
 async function mintPageInit() {
     const mintData = await getMintData();
-    const elementIds = mapElementIds();
+    const elementIds = mapElementIds(mintData.denomsToShow);
     updateMintUI(elementIds, mintData.totalLocked, mintData.totalBorrowed, mintData.rewardsAPY, mintData.totalAssetValues);
     await sleep(30000);
     mintPageInit();

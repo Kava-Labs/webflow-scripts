@@ -65,9 +65,6 @@ function setAssetDisplayValues(denoms, totalSuppliedUsdPerDenoms,totalBorrowedUs
         // set supply and guard against undefined 
         const supplyAPYForDenom  = guardedAssign(supplyAPY, denom, "0.00%", "supplyAPY");
 
-        // this log should match the lend page 
-        // console.log(denom, totalSuppliedForDenom, totalBorrowedForDenom, rewardsAPYForDenom, supplyAPYForDenom);
-
         setDisplayValueByIdHard(cssIdSupplied,  totalSuppliedForDenom); 
         setDisplayValueByIdHard(cssIdBorrowed,  totalBorrowedForDenom);
         setDisplayValueByIdHard(cssIdRewardApy, rewardsAPYForDenom);
@@ -94,7 +91,7 @@ function updateUI(cssIds, hardData){
 async function hardPageInit(){
     const hardData = await getHardData();
     const cssIds = mapCssIds(hardData.denomsToShow);  
- 
+    console.log(cssIds)
     updateUI(cssIds, hardData);
     await sleep(30000);
 
@@ -106,5 +103,3 @@ function sleep(ms = 10000){
 }; 
 
 hardPageInit(); 
-// new 2982a6985dcb12e9ae3552c9c6e3c47378464e2f 
-// old 4386b824a78114d5b014d5699f3f62546e8c17cb
