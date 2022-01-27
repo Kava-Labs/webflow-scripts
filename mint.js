@@ -1,10 +1,8 @@
 const MINT_DATA_URL = "http://localhost:8888/.netlify/functions/mint";
 
-function formatElementId(value, pool) {
-    return `${value}-${pool}`.toUpperCase();
-};
-  
-  function setDisplayValueById(elementId, value) {
+
+function setDisplayValueById(elementId, value) {
+    console.log(elementId, value); 
     const element = document.getElementById(elementId)
     if (element) { element.innerHTML = value; }
 };
@@ -109,15 +107,24 @@ function mapElementIds(){
 
 
 function setRewardsAPYDisplayValues(elementIds, rewardsAPY){
-
+    for (const denom in rewardsAPY){
+        const elementId = elementIds[denom]['apy'];
+        setDisplayValueById(elementId, rewardsAPY[denom] + "%");
+    };
 }; 
 
 function setTotalBorrowedDisplayValues(elementIds, totalBorrowed){
-
+    for (const denom in totalBorrowed){
+        const elementId = elementIds[denom]["totalBorrowed"];
+        setDisplayValueById(elementId, totalBorrowed[denom]);
+    };
 }; 
 
 function setTotalLockedDisplayValues(elementIds, totalLocked){
-
+    for (const denom in totalLocked){
+        const elementId = elementIds[denom]["totalLocked"];
+        setDisplayValueById(elementId, totalLocked[denom]);
+    };
 };
 
 function setTotalAssetUsdDisplayValue(elementIds, totalAssetUsd){
@@ -141,7 +148,6 @@ async function getMintData() {
   
 async function mintPageInit() {
     const mintData = await getMintData();
-    console.log(mintData);
     const elementIds = mapElementIds();
     updateUI(elementIds, mintData.totalLocked, mintData.totalBorrowed, mintData.rewardsAPY, mintData.totalAssetValues);
     await sleep(30000);
