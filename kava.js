@@ -2,6 +2,12 @@ const STATS_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functio
 const BINANACE_URL = "https://api.binance.com/api/v3";
 const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
 
+
+function setDisplayColor(cssId, color){
+    $(`#${cssId}`).css({ color: color });
+};
+  
+
 const usdFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD'
@@ -154,7 +160,7 @@ function setTotalBorrowedPerAssetPercentage(debtLimits, totalBorrowedPerDenom){
         const denomTotalBorrowed = totalBorrowedPerDenom[denom];
         const percentage = ((Number(denomTotalBorrowed) / Number(denomDebtLimit))  * 100).toFixed(2) + "%";
 
-        const element = $(`.percent-line-usdx-${denom}`)
+        const element = $(`.percent-line-usdx-${denom.toLocaleLowerCase()}`)
         if (element) { element.css("width", percentage); }
     }
 };
@@ -167,6 +173,13 @@ function setBorrowAPYPerAssetDisplayValues(elementIds, rewardsAPY){
     };
 }; 
 
+function setBorrowLimitsPerAssetDisplayValues(elementIds, borrowLimits){
+    for (const denom in borrowLimits){
+        const elementId = elementIds[denom]['borrowLimit'];
+        setDisplayValueById(elementId, formatMoneyNoDecimalsOrLabels(borrowLimits[denom]));
+    }; 
+};
+
 function updateStatsUI(elementIds, mintData) {
     setMarketCapDisplayValue(elementIds, mintData.totalMarketCap);
     setMarketCapPerDenomDisplayValues(elementIds, mintData.marketCapForDenoms);
@@ -178,7 +191,8 @@ function updateStatsUI(elementIds, mintData) {
     setTotalSuppliedUSDPerAssetDisplayValues(elementIds, mintData.totalSuppliedPerDenom);
     setTotalBorrowedPerAssetUSDXDisplayValues(elementIds, mintData.totalBorrowedPerDenom);
     setBorrowAPYPerAssetDisplayValues(elementIds, mintData.rewardsAPY);
-    setTotalBorrowedPerAssetPercentage(mintData.debtLimits, mintData.totalBorrowedPerDenom)
+    setTotalBorrowedPerAssetPercentage(mintData.debtLimits, mintData.totalBorrowedPerDenom);
+    setBorrowLimitsPerAssetDisplayValues(elementIds, mintData.debtLimits);
     $(".metric-blur").css("background-color", "transparent");
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"});
@@ -255,10 +269,29 @@ function updatePriceChangesUI(elementIds){
             const priceChangeMobile = elementIds[denom]["priceChangePercent"]["md"];
             const priceChangeDesktop = elementIds[denom]["priceChangePercent"]["d"];
             const priceChangeId = elementIds[denom]["priceChangePercent"]["pc"];
-            const percentageChange = String(marketData[denom]);
-            setDisplayValueById(priceChangeDesktop, percentageChange);
-            setDisplayValueById(priceChangeMobile, percentageChange);
-            setDisplayValueById(priceChangeId, percentageChange);
+            let percentageChange = Number(marketData[denom]).toFixed(2);
+
+            if (Number(percentageChange) > 0) {
+                percentageChange = "+" + percentageChange
+                setDisplayColor(priceChangeMobile, 'green')
+                setDisplayColor(priceChangeDesktop, 'green')
+                setDisplayColor(priceChangeId, 'green')
+              } else if (Number(percentageChange) === 0) {
+                setDisplayColor(priceChangeMobile, 'grey')
+                setDisplayColor(priceChangeDesktop, 'grey')
+                setDisplayColor(priceChangeId, 'grey')
+              } else {
+                percentageChange = percentageChange
+                setDisplayColor(priceChangeMobile, 'red')
+                setDisplayColor(priceChangeDesktop, 'red')
+                setDisplayColor(priceChangeId, 'red')
+              }
+          
+
+            setDisplayValueById(priceChangeDesktop, percentageChange + "%");
+            setDisplayValueById(priceChangeMobile, percentageChange + "%");
+            setDisplayValueById(priceChangeId, percentageChange + "%");
+          
         };
     }); 
 }; 
@@ -284,3 +317,5 @@ function sleep(ms = 10000) {
 };
   
 statsPageInit(); 
+
+//src="https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@4386b824a78114d5b014d5699f3f62546e8c17cb/kava-stats.min.js"
