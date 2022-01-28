@@ -98,8 +98,8 @@ function setMarketCapPerDenomDisplayValues(elementIds, marketCapForDenoms){
         const elementIdDesktop = elementIds[denom]["marketCap"]["d"];
         const elementIdMobile = elementIds[denom]["marketCap"]["m"];
         
-        setDisplayValueById(elementIdDesktop, toUSDString(marketCapForDenoms[denom].replace("$", "")));
-        setDisplayValueById(elementIdMobile, toUSDString(marketCapForDenoms[denom].replace("$", "")));
+        setDisplayValueById(elementIdDesktop, marketCapForDenoms[denom]);
+        setDisplayValueById(elementIdMobile, marketCapForDenoms[denom]);
     }; 
 }; 
 
