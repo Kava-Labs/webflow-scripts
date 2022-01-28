@@ -6,7 +6,19 @@ const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
 function setDisplayColor(cssId, color){
     $(`#${cssId}`).css({ color: color });
 };
-  
+
+function toUSDString(value){
+  const amount = Number(value);
+  if (amount >= 1000000) {
+    const valueInMil = amount / Number(10 ** 6);
+    const valueInMilUsd = usdFormatter.format(valueInMil);
+    return valueInMilUsd + 'M';
+  } else {
+    const valueInK = amount / Number(10 ** 3);
+    const valueInKUsd = usdFormatter.format(valueInK);
+    return valueInKUsd + 'K';
+  }
+};
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -86,8 +98,8 @@ function setMarketCapPerDenomDisplayValues(elementIds, marketCapForDenoms){
         const elementIdDesktop = elementIds[denom]["marketCap"]["d"];
         const elementIdMobile = elementIds[denom]["marketCap"]["m"];
         
-        setDisplayValueById(elementIdDesktop, marketCapForDenoms[denom]);
-        setDisplayValueById(elementIdMobile, marketCapForDenoms[denom]);
+        setDisplayValueById(elementIdDesktop, toUSDString(marketCapForDenoms[denom].replace("$", "")));
+        setDisplayValueById(elementIdMobile, toUSDString(marketCapForDenoms[denom].replace("$", "")));
     }; 
 }; 
 
@@ -106,8 +118,8 @@ function setAssetLimitDisplayValues(elementIds, asssetLimits){
     for (const denom in asssetLimits){
         const elementIdDesktop = elementIds[denom]['assetLimit']['d']; 
         const elementIdMobile = elementIds[denom]['assetLimit']['m'];
-        setDisplayValueById(elementIdDesktop, formatMoneyNoDecimalsOrLabels(asssetLimits[denom]));
-        setDisplayValueById(elementIdMobile, formatMoneyNoDecimalsOrLabels(asssetLimits[denom]));
+        setDisplayValueById(elementIdDesktop, formatMoneyNoDecimalsOrLabels(asssetLimits[denom]) + " " + denom);
+        setDisplayValueById(elementIdMobile, formatMoneyNoDecimalsOrLabels(asssetLimits[denom]) + " " + denom);
     }; 
 };
 
