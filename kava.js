@@ -1,4 +1,4 @@
-const STATS_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functions/stats";
+const STATS_DATA_URL = "https://app.kava.io/.netlify/functions/stats";
 const BINANACE_URL = "https://api.binance.com/api/v3";
 const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
 

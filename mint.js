@@ -1,4 +1,4 @@
-const MINT_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functions/mint";
+const MINT_DATA_URL = "https://app.kava.io/.netlify/functions/mint";
 
 
 function setDisplayValueById(elementId, value) {

@@ -1,4 +1,4 @@
-const SWAP_DATA_URL = "https://lucid-snyder-df4e9f.netlify.app/.netlify/functions/swap";
+const SWAP_DATA_URL = "https://app.kava.io/.netlify/functions/swap";
 
 function formatElementId(value, pool) {
   return `${value}-${pool}`.toUpperCase();
