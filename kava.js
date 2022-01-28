@@ -141,8 +141,8 @@ function setTotalSuppliedUSDPerAssetDisplayValues(elementIds, totalSuppliedPerDe
         if (!elementIds[denom]) continue; 
         const elementIdDesktop = elementIds[denom]["totalSupplied"]["d"];
         const elementIdMobile = elementIds[denom]["totalSupplied"]["m"];
-        setDisplayValueById(elementIdMobile, usdFormatter.format(Number(totalSuppliedPerDenom[denom])));
-        setDisplayValueById(elementIdDesktop, usdFormatter.format(Number(totalSuppliedPerDenom[denom])));
+        setDisplayValueById(elementIdMobile, usdFormatter.format(Number(totalSuppliedPerDenom[denom])).replace("$", ""));
+        setDisplayValueById(elementIdDesktop, usdFormatter.format(Number(totalSuppliedPerDenom[denom])).replace("$", ""));
     };
 }; 
 
