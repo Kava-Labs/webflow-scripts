@@ -79,7 +79,7 @@ function mapElementIds(denoms){
 
 function setMarketCapDisplayValue(elementIds, totalMarketCap){
     const elementId = elementIds.totalMarketCap;
-    setDisplayValueById(elementId, totalMarketCap);
+    setDisplayValueById(elementId, totalMarketCap.replace("$", ""));
 };
 
 function setMarketCapPerDenomDisplayValues(elementIds, marketCapForDenoms){
@@ -97,7 +97,7 @@ function setSupplyPerDenomDisplayValues(elementIds, suppyTotal){
         if (!elementIds[denom]) continue; 
         const elementIdDesktop = elementIds[denom]['supplied']['d'];
         const elementIdMobile = elementIds[denom]['supplied']['m'];
-        const supplyTotalForCurrentDenom = formatMoneyNoDecimalsOrLabels(Number(suppyTotal[denom].amount));
+        const supplyTotalForCurrentDenom = formatMoneyNoDecimalsOrLabels(Number(suppyTotal[denom].amount)) + " " + denom;
         setDisplayValueById(elementIdMobile, supplyTotalForCurrentDenom);
         setDisplayValueById(elementIdDesktop, supplyTotalForCurrentDenom);
     }; 
