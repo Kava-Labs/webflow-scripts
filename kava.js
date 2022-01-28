@@ -113,6 +113,7 @@ function setAssetLimitDisplayValues(elementIds, asssetLimits){
 };
 
 function serPricesPerDenomDisplayValue(elementIds, pricesUsd){
+     pricesUsd["HBTC"] = pricesUsd["BTCB"];
     for (const denom in pricesUsd){
         const kavaLendingCssId = elementIds[denom]['price']['price'];
         const kavaDefiDesktopCssId = elementIds[denom]['price']['d'];
