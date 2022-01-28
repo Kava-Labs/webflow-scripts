@@ -19,7 +19,6 @@ function formatMoneyNoDecimalsOrLabels(v){
 };
 
 function setDisplayValueById(elementId, value) {
-    console.log(elementId,value)
     const element = document.getElementById(elementId)
     if (element) { element.innerHTML = value; }
 };
@@ -128,12 +127,12 @@ function serPricesPerDenomDisplayValue(elementIds, pricesUsd){
 // MINT STATS 
 function setTotalAssetsSuppliedDisplayValue(elementIds, totalSupplied){
     const elementId = elementIds.totalAssetsSupplied;
-    setDisplayValueById(elementId, usdFormatter.format(totalSupplied));
+    setDisplayValueById(elementId, usdFormatter.format(totalSupplied).replace("$", ""));
 }; 
 
 function setTotalAssetsBorrowedDisplayValue(elementIds, totalBorrowed){
     const elementId = elementIds.totalAssetsBorrowed;
-    setDisplayValueById(elementId, usdFormatter.format(totalBorrowed));
+    setDisplayValueById(elementId, usdFormatter.format(totalBorrowed).replace("$", ""));
 }; 
 
 
@@ -181,19 +180,19 @@ function setBorrowLimitsPerAssetDisplayValues(elementIds, borrowLimits){
     }; 
 };
 
-function updateStatsUI(elementIds, mintData) {
-    setMarketCapDisplayValue(elementIds, mintData.totalMarketCap);
-    setMarketCapPerDenomDisplayValues(elementIds, mintData.marketCapForDenoms);
-    setSupplyPerDenomDisplayValues(elementIds, mintData.suppyTotal);
-    setAssetLimitDisplayValues(elementIds, mintData.asssetLimits);
-    serPricesPerDenomDisplayValue(elementIds, mintData.pricesUsd);
-    setTotalAssetsSuppliedDisplayValue(elementIds, mintData.totalSupplied);
-    setTotalAssetsBorrowedDisplayValue(elementIds, mintData.totalBorrowed);
-    setTotalSuppliedUSDPerAssetDisplayValues(elementIds, mintData.totalSuppliedPerDenom);
-    setTotalBorrowedPerAssetUSDXDisplayValues(elementIds, mintData.totalBorrowedPerDenom);
-    setBorrowAPYPerAssetDisplayValues(elementIds, mintData.rewardsAPY);
-    setTotalBorrowedPerAssetPercentage(mintData.debtLimits, mintData.totalBorrowedPerDenom);
-    setBorrowLimitsPerAssetDisplayValues(elementIds, mintData.debtLimits);
+function updateStatsUI(elementIds, statsData) {
+    setMarketCapDisplayValue(elementIds, statsData.totalMarketCap);
+    setMarketCapPerDenomDisplayValues(elementIds, statsData.marketCapForDenoms);
+    setSupplyPerDenomDisplayValues(elementIds, statsData.suppyTotal);
+    setAssetLimitDisplayValues(elementIds, statsData.asssetLimits);
+    serPricesPerDenomDisplayValue(elementIds, statsData.pricesUsd);
+    setTotalAssetsSuppliedDisplayValue(elementIds, statsData.totalSupplied);
+    setTotalAssetsBorrowedDisplayValue(elementIds, statsData.totalBorrowed);
+    setTotalSuppliedUSDPerAssetDisplayValues(elementIds, statsData.totalSuppliedPerDenom);
+    setTotalBorrowedPerAssetUSDXDisplayValues(elementIds, statsData.totalBorrowedPerDenom);
+    setBorrowAPYPerAssetDisplayValues(elementIds, statsData.rewardsAPY);
+    setTotalBorrowedPerAssetPercentage(statsData.debtLimits, statsData.totalBorrowedPerDenom);
+    setBorrowLimitsPerAssetDisplayValues(elementIds, statsData.debtLimits);
     $(".metric-blur").css("background-color", "transparent");
     $(".metric-blur").addClass('without-after');
     $(".api-metric").css({"display": "block", "text-align": "center"});
@@ -265,6 +264,7 @@ async function fetchMarketData(){
 
 function updatePriceChangesUI(elementIds){
     fetchMarketData().then(function(marketData) {
+        marketData["HBTC"] = marketData["BTCB"];
         for (const denom in marketData){
             if (!elementIds[denom]) continue; 
             const priceChangeMobile = elementIds[denom]["priceChangePercent"]["md"];
@@ -304,10 +304,9 @@ async function getStatsData() {
 };
   
 async function statsPageInit() {
-    const mintData = await getStatsData();
-    const elementIds = mapElementIds([...Object.keys(mintData.pricesUsd), "HBTC"]);
-    console.log(elementIds)
-    updateStatsUI(elementIds, mintData);
+    const statsData = await getStatsData();
+    const elementIds = mapElementIds([...Object.keys(statsData.pricesUsd), "HBTC"]);
+    updateStatsUI(elementIds, statsData);
     updatePriceChangesUI(elementIds);
     await sleep(30000);
     statsPageInit();
@@ -318,5 +317,3 @@ function sleep(ms = 10000) {
 };
   
 statsPageInit(); 
-
-//src="https://cdn.jsdelivr.net/gh/Kava-Labs/webflow-scripts@4386b824a78114d5b014d5699f3f62546e8c17cb/kava-stats.min.js"
